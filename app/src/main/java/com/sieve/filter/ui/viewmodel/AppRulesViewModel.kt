@@ -34,16 +34,20 @@ class AppRulesViewModel(application: Application) : AndroidViewModel(application
     val appList: StateFlow<List<AppInfo>> = combine(
         _installedApps,
         repository.getAllAppRules(),
+        repository.getAllAppBlockCounts(),
         _searchQuery
-    ) { installed, savedRules, query ->
+    ) { installed, savedRules, blockCounts, query ->
         val ruleMap = savedRules.associate { it.packageName to it.getAppRuleMode() }
+        val countMap = blockCounts.associate { it.packageName to it.count }
 
         val merged = installed.map { app ->
             val mode = ruleMap[app.packageName] ?: AppRuleMode.AUTO
-            app.copy(mode = mode)
+            val count = countMap[app.packageName] ?: 0
+            app.copy(mode = mode, blockCount = count)
         }.sortedWith(
-            // Prioritize custom rules (ALLOW or BLOCK) over default AUTO, then alphabetically
+            // Prioritize custom rules (ALLOW or BLOCK) over default AUTO, then by highest block count, then alphabetically
             compareBy<AppInfo> { it.mode == AppRuleMode.AUTO }
+                .thenByDescending { it.blockCount }
                 .thenBy { it.appName.lowercase() }
         )
 
@@ -71,19 +75,32 @@ class AppRulesViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     private fun loadInstalledApps() {
         viewModelScope.launch(Dispatchers.IO) {
-            val intent = Intent(Intent.ACTION_MAIN, null).apply {
-                addCategory(Intent.CATEGORY_LAUNCHER)
-            }
-            val resolveInfos = packageManager.queryIntentActivities(intent, 0)
+            _isLoading.value = true
             val currentPkg = getApplication<Application>().packageName
+            val apps = try {
+                @Suppress("DEPRECATION")
+                val installed = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    packageManager.getInstalledApplications(
+                        PackageManager.ApplicationInfoFlags.of(0L)
+                    )
+                } else {
+                    packageManager.getInstalledApplications(0)
+                }
 
-            val apps = resolveInfos
-                .mapNotNull { it.activityInfo?.applicationInfo }
-                .distinctBy { it.packageName }
-                .filter { it.packageName != currentPkg }
-                .map { appInfo ->
+                val filtered = installed.filter { appInfo ->
+                    appInfo.packageName != currentPkg &&
+                    (packageManager.getLaunchIntentForPackage(appInfo.packageName) != null ||
+                     (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0)
+                }.distinctBy { it.packageName }
+
+                android.util.Log.d("AppRulesViewModel", "Found ${filtered.size} installed apps to map")
+
+                filtered.map { appInfo ->
                     val name = packageManager.getApplicationLabel(appInfo).toString()
                     val icon = try {
                         packageManager.getApplicationIcon(appInfo)
@@ -97,9 +114,15 @@ class AppRulesViewModel(application: Application) : AndroidViewModel(application
                         mode = AppRuleMode.AUTO
                     )
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("AppRulesViewModel", "Error querying installed apps", e)
+                emptyList()
+            }
 
+            android.util.Log.d("AppRulesViewModel", "Loaded ${apps.size} apps successfully")
             withContext(Dispatchers.Main) {
                 _installedApps.value = apps
+                _isLoading.value = false
             }
         }
     }

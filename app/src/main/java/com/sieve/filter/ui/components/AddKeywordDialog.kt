@@ -2,6 +2,7 @@ package com.sieve.filter.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,13 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -35,17 +36,46 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.sieve.filter.model.RuleAction
 import com.sieve.filter.ui.theme.AllowGreen
+import com.sieve.filter.ui.theme.AllowGreenBg
 import com.sieve.filter.ui.theme.BlockRed
+import com.sieve.filter.ui.theme.BlockRedBg
 
 @Composable
 fun AddKeywordDialog(
+    initialPattern: String = "",
+    initialPackageName: String? = null,
+    initialAction: RuleAction = RuleAction.BLOCK,
     onDismiss: () -> Unit,
     onConfirm: (pattern: String, action: RuleAction, packageName: String?) -> Unit
 ) {
-    var pattern by remember { mutableStateOf("") }
-    var action by remember { mutableStateOf(RuleAction.BLOCK) }
-    var packageName by remember { mutableStateOf("") }
-    var isPackageScoped by remember { mutableStateOf(false) }
+    var pattern by remember { mutableStateOf(initialPattern) }
+    var action by remember { mutableStateOf(initialAction) }
+    var packageName by remember { mutableStateOf(initialPackageName ?: "") }
+    var isPackageScoped by remember { mutableStateOf(!initialPackageName.isNullOrBlank()) }
+    var testText by remember { mutableStateOf("") }
+
+    val examplePatterns = listOf(
+        "% off" to RuleAction.BLOCK,
+        "cashback" to RuleAction.BLOCK,
+        "flash sale" to RuleAction.BLOCK,
+        "exclusive offer" to RuleAction.BLOCK,
+        "coins|spins|bonus" to RuleAction.BLOCK,
+        "otp" to RuleAction.ALLOW,
+        "delivered" to RuleAction.ALLOW,
+        "order confirmed" to RuleAction.ALLOW
+    )
+
+    val testMatchResult = remember(pattern, testText, action) {
+        if (pattern.isBlank() || testText.isBlank()) null
+        else {
+            try {
+                val regex = Regex(pattern, RegexOption.IGNORE_CASE)
+                if (regex.containsMatchIn(testText)) action else null
+            } catch (_: Exception) {
+                if (testText.contains(pattern, ignoreCase = true)) action else null
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -64,11 +94,86 @@ fun AddKeywordDialog(
                 OutlinedTextField(
                     value = pattern,
                     onValueChange = { pattern = it },
-                    label = { Text("Keyword or Phrase") },
+                    label = { Text("Keyword or Regex Pattern") },
                     placeholder = { Text("e.g. 50% off, cashback, flash sale") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                // Quick Pattern Hint Chips
+                Column {
+                    Text(
+                        text = "Quick Suggestions (tap to fill)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        examplePatterns.forEach { (hint, hintAction) ->
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.clickable {
+                                    pattern = hint
+                                    action = hintAction
+                                }
+                            ) {
+                                Text(
+                                    text = hint,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Live Pattern Tester
+                Column {
+                    OutlinedTextField(
+                        value = testText,
+                        onValueChange = { testText = it },
+                        label = { Text("Live Rule Tester") },
+                        placeholder = { Text("Type sample notification text...") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (testText.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        if (testMatchResult != null) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (testMatchResult == RuleAction.BLOCK) BlockRedBg else AllowGreenBg
+                            ) {
+                                Text(
+                                    text = "✓ MATCHED → $testMatchResult",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (testMatchResult == RuleAction.BLOCK) BlockRed else AllowGreen,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        } else {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant
+                            ) {
+                                Text(
+                                    text = "✗ NO MATCH",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                    }
+                }
 
                 Text(
                     text = "Action",

@@ -7,6 +7,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -21,6 +22,19 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = DarkOnBackground,
     onSurface = DarkOnSurface,
     onSurfaceVariant = DarkOnSurfaceVariant
+)
+
+// AMOLED True Black palette for OLED battery saving (turns off pixels)
+private val AmoledDarkColorScheme = darkColorScheme(
+    primary = SievePrimary,
+    secondary = SieveSecondary,
+    tertiary = SieveTertiary,
+    background = Color(0xFF000000),
+    surface = Color(0xFF0D0D11),
+    surfaceVariant = Color(0xFF1C1C22),
+    onBackground = Color(0xFFFFFFFF),
+    onSurface = Color(0xFFF1F5F9),
+    onSurfaceVariant = Color(0xFF94A3B8)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -38,9 +52,14 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun SieveTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    isAmoled: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = when {
+        darkTheme && isAmoled -> AmoledDarkColorScheme
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
 
     val view = LocalView.current
     if (!view.isInEditMode) {

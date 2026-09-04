@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -56,6 +57,7 @@ fun AppRulesScreen(
 ) {
     val apps by viewModel.appList.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Column(
         modifier = Modifier
@@ -93,22 +95,45 @@ fun AppRulesScreen(
                 .padding(horizontal = 16.dp, vertical = 4.dp)
         )
 
-        // List of Apps
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(
-                items = apps,
-                key = { it.packageName }
-            ) { app ->
-                AppRuleRow(
-                    app = app,
-                    onModeSelected = { mode ->
-                        viewModel.setAppMode(app.packageName, mode)
-                    }
+        if (isLoading && apps.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(36.dp)
                 )
+            }
+        } else if (apps.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (searchQuery.isNotBlank()) "No apps matching \"$searchQuery\"" else "No installed apps found",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        } else {
+            // List of Apps
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(
+                    items = apps,
+                    key = { it.packageName }
+                ) { app ->
+                    AppRuleRow(
+                        app = app,
+                        onModeSelected = { mode ->
+                            viewModel.setAppMode(app.packageName, mode)
+                        }
+                    )
+                }
             }
         }
     }
@@ -162,13 +187,31 @@ fun AppRuleRow(
 
             // App Name & Package
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = app.appName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = app.appName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (app.blockCount > 0) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = BlockRedBg
+                        ) {
+                            Text(
+                                text = "${app.blockCount} blocked",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = BlockRed,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
                 Text(
                     text = app.packageName,
                     style = MaterialTheme.typography.bodySmall,

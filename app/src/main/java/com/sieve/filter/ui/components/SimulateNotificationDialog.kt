@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayArrow
@@ -43,6 +44,9 @@ import com.sieve.filter.SieveApplication
 import com.sieve.filter.model.AppRuleMode
 import com.sieve.filter.model.FilterDecision
 import com.sieve.filter.service.NotificationClassifier
+import com.sieve.filter.service.SmartAiClassifier
+import com.sieve.filter.ui.theme.AiPurple
+import com.sieve.filter.ui.theme.AiPurpleBg
 import com.sieve.filter.ui.theme.AllowGreen
 import com.sieve.filter.ui.theme.AllowGreenBg
 import com.sieve.filter.ui.theme.BlockRed
@@ -59,18 +63,32 @@ data class NotificationPreset(
 
 val PRESETS = listOf(
     NotificationPreset(
-        label = "Zomato: 50% Promo (Spam)",
-        packageName = "in.org.projecteka.zomato",
-        title = "Hungry? 🍕 Flat 50% OFF",
-        text = "Use code PIZZA50 to get 50% off + ₹100 cashback on your lunch!",
-        channelId = "offers_and_promotions"
+        label = "Jar: Save ₹10 Target (AI Spam)",
+        packageName = "com.mysave.jar",
+        title = "Save ₹10 to reach the target",
+        text = "You are very close! Add ₹10 now.",
+        channelId = "savings_nudges"
     ),
     NotificationPreset(
-        label = "Zomato: Order Delivered (Keep)",
-        packageName = "in.org.projecteka.zomato",
-        title = "Order Delivered!",
-        text = "Your order from Burger King has been delivered. Enjoy your meal!",
-        channelId = "order_updates"
+        label = "Truecaller: VIP Rewards (AI Spam)",
+        packageName = "com.truecaller",
+        title = "New profile views you missed this week 25 p...",
+        text = "Introducing VIP Rewards 🎉 You're invited! Join now.",
+        channelId = "engagement_push"
+    ),
+    NotificationPreset(
+        label = "Bewakoof: Solid Joggers (AI Spam)",
+        packageName = "com.bewakoof.bewakoof",
+        title = "Solid Joggers, Plenty Of Colours",
+        text = "Build your rotation one colour at a time 👀",
+        channelId = "catalog_marketing"
+    ),
+    NotificationPreset(
+        label = "YouTube: Win ₹1 CRORE (AI Spam)",
+        packageName = "com.google.android.youtube",
+        title = "Google Gemini Fund My Crazy: Complete 1-Min Task & Win ₹1 CRORE 💰",
+        text = "DR abhishek.",
+        channelId = "recommendations"
     ),
     NotificationPreset(
         label = "HDFC Bank: OTP (Keep)",
@@ -80,11 +98,11 @@ val PRESETS = listOf(
         channelId = "transaction_alerts"
     ),
     NotificationPreset(
-        label = "Swiggy: Flash Sale (Spam)",
-        packageName = "in.swiggy.android",
-        title = "⚡ Flash Sale Ends in 1 Hour!",
-        text = "Limited time offer: Buy 1 Get 1 Free on top biryanis in your city.",
-        channelId = "promotional_deals"
+        label = "Zomato: Delivered (Keep)",
+        packageName = "in.org.projecteka.zomato",
+        title = "Order Delivered!",
+        text = "Your order from Burger King has been delivered. Enjoy your meal!",
+        channelId = "order_updates"
     ),
     NotificationPreset(
         label = "Uber: Ride Arriving (Keep)",
@@ -193,10 +211,15 @@ fun SimulateNotificationDialog(
                 // Decision result display
                 if (decisionResult != null) {
                     val decision = decisionResult!!
+                    val isAi = decision.matchedRule.startsWith("AI:")
                     Card(
                         shape = RoundedCornerShape(10.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (decision.shouldDismiss) BlockRedBg else AllowGreenBg
+                            containerColor = when {
+                                isAi -> AiPurpleBg
+                                decision.shouldDismiss -> BlockRedBg
+                                else -> AllowGreenBg
+                            }
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -205,9 +228,17 @@ fun SimulateNotificationDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = if (decision.shouldDismiss) Icons.Default.Block else Icons.Default.CheckCircle,
+                                imageVector = when {
+                                    isAi -> Icons.Default.AutoAwesome
+                                    decision.shouldDismiss -> Icons.Default.Block
+                                    else -> Icons.Default.CheckCircle
+                                },
                                 contentDescription = null,
-                                tint = if (decision.shouldDismiss) BlockRed else AllowGreen,
+                                tint = when {
+                                    isAi -> AiPurple
+                                    decision.shouldDismiss -> BlockRed
+                                    else -> AllowGreen
+                                },
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -215,7 +246,11 @@ fun SimulateNotificationDialog(
                                 Text(
                                     text = if (decision.shouldDismiss) "DECISION: DISMISS (SPAM)" else "DECISION: KEEP (IMPORTANT)",
                                     fontWeight = FontWeight.Bold,
-                                    color = if (decision.shouldDismiss) BlockRed else AllowGreen,
+                                    color = when {
+                                        isAi -> AiPurple
+                                        decision.shouldDismiss -> BlockRed
+                                        else -> AllowGreen
+                                    },
                                     style = MaterialTheme.typography.titleSmall
                                 )
                                 Text(
@@ -236,6 +271,7 @@ fun SimulateNotificationDialog(
                         val appRule = repository.getAppRuleSync(packageName)
                         val appMode = appRule?.getAppRuleMode() ?: AppRuleMode.AUTO
                         val rules = repository.getRulesForPackageSync(packageName)
+                        val prefs = (context.applicationContext as SieveApplication).preferencesManager
 
                         val payload = NotificationClassifier.NotificationPayload(
                             packageName = packageName,
@@ -250,16 +286,35 @@ fun SimulateNotificationDialog(
                             rules = rules
                         )
 
-                        decisionResult = decision
+                        var finalDecision = decision
+                        if (decision.isPassThrough && prefs.isAiFilterEnabled.value) {
+                            val aiResult = SmartAiClassifier.classify(payload)
+                            if (aiResult.isSpam) {
+                                val aiRule = "AI: ${aiResult.category} (${aiResult.primaryKeyword})"
+                                finalDecision = FilterDecision.block(
+                                    matchedRule = aiRule,
+                                    reason = aiResult.reason
+                                )
+                                repository.recordAiSuggestion(
+                                    packageName = packageName,
+                                    suggestedKeyword = aiResult.primaryKeyword,
+                                    category = aiResult.category,
+                                    sampleTitle = title,
+                                    sampleText = text
+                                )
+                            }
+                        }
+
+                        decisionResult = finalDecision
 
                         // If blocked, log to database so user can see it appear in real-time!
-                        if (decision.shouldDismiss) {
+                        if (finalDecision.shouldDismiss) {
                             repository.logBlockedNotification(
                                 packageName = packageName,
                                 title = title,
                                 textSnippet = text,
                                 channelId = channelId,
-                                matchedRule = decision.matchedRule
+                                matchedRule = finalDecision.matchedRule
                             )
                         }
                     }

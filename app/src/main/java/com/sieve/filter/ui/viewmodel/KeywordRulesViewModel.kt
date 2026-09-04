@@ -16,7 +16,8 @@ import kotlinx.coroutines.launch
 enum class KeywordFilterTab {
     ALL,
     BLOCK,
-    ALLOW
+    ALLOW,
+    AI_SUGGESTIONS
 }
 
 class KeywordRulesViewModel(application: Application) : AndroidViewModel(application) {
@@ -29,6 +30,33 @@ class KeywordRulesViewModel(application: Application) : AndroidViewModel(applica
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
+    val pendingAiCount: StateFlow<Int> = repository.getPendingAiCount().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
+
+    val pendingAiSuggestions = combine(
+        repository.getPendingAiSuggestions(),
+        _searchQuery
+    ) { suggestions, query ->
+        if (query.isBlank()) {
+            suggestions
+        } else {
+            val lower = query.lowercase()
+            suggestions.filter {
+                it.suggestedKeyword.lowercase().contains(lower) ||
+                it.packageName.lowercase().contains(lower) ||
+                (it.sampleTitle?.lowercase()?.contains(lower) == true) ||
+                (it.sampleText?.lowercase()?.contains(lower) == true)
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
     val rules: StateFlow<List<KeywordRuleEntity>> = combine(
         repository.getAllKeywordRules(),
         _selectedTab,
@@ -38,6 +66,7 @@ class KeywordRulesViewModel(application: Application) : AndroidViewModel(applica
             KeywordFilterTab.ALL -> allRules
             KeywordFilterTab.BLOCK -> allRules.filter { it.getRuleAction() == RuleAction.BLOCK }
             KeywordFilterTab.ALLOW -> allRules.filter { it.getRuleAction() == RuleAction.ALLOW }
+            KeywordFilterTab.AI_SUGGESTIONS -> emptyList()
         }
 
         if (query.isBlank()) {
@@ -78,6 +107,24 @@ class KeywordRulesViewModel(application: Application) : AndroidViewModel(applica
     fun resetToDefaults() {
         viewModelScope.launch {
             repository.resetDefaultKeywords()
+        }
+    }
+
+    fun acceptAiSuggestion(id: Long, asGlobal: Boolean = true) {
+        viewModelScope.launch {
+            repository.acceptAiSuggestion(id, asGlobal)
+        }
+    }
+
+    fun dismissAiSuggestion(id: Long) {
+        viewModelScope.launch {
+            repository.dismissAiSuggestion(id)
+        }
+    }
+
+    fun deleteAiSuggestion(id: Long) {
+        viewModelScope.launch {
+            repository.deleteAiSuggestion(id)
         }
     }
 }

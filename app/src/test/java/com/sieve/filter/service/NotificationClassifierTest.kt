@@ -223,4 +223,43 @@ class NotificationClassifierTest {
 
         assertTrue("Uppercase and mixed-case keywords must match", decision.shouldDismiss)
     }
+
+    @Test
+    fun testFastPathAndRegexCache() {
+        val rulesWithRegex = defaultRules + listOf(
+            KeywordRuleEntity(id = 101, packageName = null, pattern = "\\b\\d+%.*off\\b", action = RuleAction.BLOCK.name)
+        )
+
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.deal.app",
+            title = "Get 70% extra off today!",
+            text = "Limited stock"
+        )
+
+        val decision = NotificationClassifier.classify(
+            payload = payload,
+            appRuleMode = AppRuleMode.AUTO,
+            rules = rulesWithRegex
+        )
+
+        assertTrue("Compiled regex should match and block", decision.shouldDismiss)
+    }
+
+    @Test
+    fun testEmptyNotificationContent_PassesThrough() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.empty.app",
+            title = null,
+            text = "",
+            subText = null
+        )
+
+        val decision = NotificationClassifier.classify(
+            payload = payload,
+            appRuleMode = AppRuleMode.AUTO,
+            rules = defaultRules
+        )
+
+        assertFalse("Empty notification content should pass through", decision.shouldDismiss)
+    }
 }

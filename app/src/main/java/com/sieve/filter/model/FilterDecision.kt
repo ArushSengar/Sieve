@@ -12,6 +12,9 @@ data class FilterDecision(
     val matchedRule: String,
     val reason: String
 ) {
+    val isPassThrough: Boolean get() = !shouldDismiss && matchedRule == "DEFAULT_ALLOW"
+    val isExplicitAllow: Boolean get() = !shouldDismiss && matchedRule != "DEFAULT_ALLOW"
+
     companion object {
         fun allow(matchedRule: String, reason: String = "Allowed by rule"): FilterDecision {
             return FilterDecision(shouldDismiss = false, matchedRule = matchedRule, reason = reason)

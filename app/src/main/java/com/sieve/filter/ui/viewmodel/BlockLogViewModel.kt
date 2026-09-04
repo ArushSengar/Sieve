@@ -81,6 +81,12 @@ class BlockLogViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun addKeywordBlockRule(pattern: String, packageName: String? = null) {
+        viewModelScope.launch {
+            repository.addKeywordRule(pattern, com.sieve.filter.model.RuleAction.BLOCK, packageName)
+        }
+    }
+
     private fun resolveAppInfo(packageName: String): Pair<String, Drawable?> {
         appInfoCache[packageName]?.let { return it }
 

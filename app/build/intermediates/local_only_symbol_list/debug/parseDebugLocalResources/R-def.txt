@@ -1,0 +1,27 @@
+R_DEF: Internal format may change without notice
+local
+color pink_40
+color pink_80
+color purple_40
+color purple_80
+color purple_grey_40
+color purple_grey_80
+color sieve_background
+color sieve_primary
+color sieve_surface
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string nav_app_rules
+string nav_block_log
+string nav_keyword_rules
+string notification_listener_service_label
+string permission_banner_desc
+string permission_banner_title
+string permission_button_grant
+string permission_granted_badge
+style Theme.Sieve
+xml backup_rules
+xml data_extraction_rules

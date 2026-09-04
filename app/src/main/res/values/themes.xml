@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.Sieve" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/sieve_background</item>
+        <item name="android:windowBackground">@color/sieve_background</item>
+    </style>
+</resources>

@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import com.sieve.filter.service.SieveNotificationListenerService
 import com.sieve.filter.ui.SieveApp
 import com.sieve.filter.ui.theme.SieveTheme
 
@@ -25,6 +26,11 @@ class MainActivity : ComponentActivity() {
                 SieveApp()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        SieveNotificationListenerService.sweepActiveNotificationsInstance()
     }
 
     /**

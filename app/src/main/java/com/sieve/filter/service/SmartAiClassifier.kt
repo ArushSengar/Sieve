@@ -1,6 +1,7 @@
 package com.sieve.filter.service
 
 import com.sieve.filter.data.local.entity.AiSuggestedRuleEntity
+import java.text.Normalizer
 import java.util.Locale
 
 /**
@@ -8,10 +9,16 @@ import java.util.Locale
  *
  * Runs in < 0.2ms with zero flash I/O and zero battery impact.
  * Catches modern marketing notifications that bypass basic discount keywords:
- * 1. Financial & Reward Bait ("Save ₹10 to reach target", "Win ₹1 CRORE", "Scratch & win")
- * 2. Engagement & Social FOMO ("New profile views you missed", "VIP Rewards 🎉", "Keep your streak")
- * 3. Catalog & E-Commerce Push ("Solid Joggers, Plenty Of Colours", "Build your rotation", "Curated for you")
- * 4. Sensational Clickbait ("Complete 1-min task & win", "Fund my crazy", "Watch before it's deleted")
+ * 1. Financial & Reward Bait ("Win an iPhone 17", "Save ₹10 to reach target", "Win ₹1 CRORE", "Scratch & win")
+ * 2. Credit Card / Loan Application Push ("Just apply for your superCard", "Tap to apply now", "Pre-approved loan")
+ * 3. Cashback & Prize Claims ("Congratulations! Get 𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸", "Claim my Rs. 12.00")
+ * 4. Engagement & Social FOMO ("New profile views you missed", "VIP Rewards 🎉", "Keep your streak")
+ * 5. Catalog & E-Commerce Push ("Solid Joggers, Plenty Of Colours", "Build your rotation", "Curated for you")
+ * 6. Sensational Clickbait ("Complete 1-min task & win", "Fund my crazy", "Watch before it's deleted")
+ *
+ * Unicode Obfuscation Resilience:
+ * Automatically de-obfuscates mathematical sans-serif/bold/italic Unicode fonts (e.g. 𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸 -> cashback)
+ * and strips zero-width spacing characters.
  *
  * Guaranteed Safety:
  * Never flags OTPs, banking debits/credits, two-factor auth, ride status, or delivery updates.
@@ -59,11 +66,61 @@ object SmartAiClassifier {
         "sent a voice message"
     )
 
-    // 1. Financial Bait Patterns
+    // 1. Financial, Giveaway & Credit/Loan Bait Patterns
     private val FINANCIAL_BAIT_TRIGGERS = listOf(
-        Pair("reach the target", "reach the target"),
-        Pair("to reach the target", "reach the target"),
-        Pair("you are very close", "you are very close"),
+        // High-value giveaway / sweepstake traps
+        Pair("win an iphone", "Win iPhone"),
+        Pair("win iphone", "Win iPhone"),
+        Pair("win a phone", "Win Phone"),
+        Pair("win a smartphone", "Win Smartphone"),
+        Pair("win an ipad", "Win iPad"),
+        Pair("win a laptop", "Win Laptop"),
+        Pair("win a car", "Win Car"),
+        Pair("win a bike", "Win Bike"),
+        Pair("top spender to win", "Top Spender to Win"),
+        Pair("spender to win", "Spender to Win"),
+        Pair("stand a chance to win", "Chance to Win"),
+        Pair("chance to win", "Chance to Win"),
+        Pair("lucky winner", "Lucky Winner"),
+        Pair("bumper prize", "Bumper Prize"),
+        Pair("win gold", "Win Gold"),
+
+        // Credit Card / Fintech loan push
+        Pair("apply for your supercard", "Apply For SuperCard"),
+        Pair("apply for your card", "Apply For Card"),
+        Pair("apply for your", "Apply For Card/Loan"),
+        Pair("tap to apply", "Tap To Apply"),
+        Pair("apply now", "Apply Now"),
+        Pair("pre-approved credit", "Pre-Approved Credit"),
+        Pair("pre-approved loan", "Pre-Approved Loan"),
+        Pair("pre-approved limit", "Pre-Approved Limit"),
+        Pair("instant loan", "Instant Loan"),
+        Pair("instant credit", "Instant Credit"),
+        Pair("lifetime free card", "Lifetime Free Card"),
+        Pair("lifetime free credit card", "Lifetime Free Card"),
+        Pair("activate your card", "Activate Card"),
+        Pair("upgrade your card", "Upgrade Card"),
+
+        // Cashback & Voucher Claims
+        Pair("claim my rs", "Claim Cashback"),
+        Pair("claim my ₹", "Claim Cashback"),
+        Pair("claim your rs", "Claim Cashback"),
+        Pair("claim your ₹", "Claim Cashback"),
+        Pair("claim your cashback", "Claim Cashback"),
+        Pair("claim cashback", "Claim Cashback"),
+        Pair("cashback on your", "Cashback Bait"),
+        Pair("congratulations! get", "Cashback Bait"),
+        Pair("congratulations! you", "Cashback Bait"),
+        Pair("unclaimed cashback", "Unclaimed Cashback"),
+        Pair("unclaimed reward", "Unclaimed Reward"),
+        Pair("assured cashback", "Assured Cashback"),
+        Pair("flat cashback", "Flat Cashback"),
+        Pair("cashback", "Cashback"),
+
+        // Micro-savings / Gamified finance
+        Pair("reach the target", "Reach The Target"),
+        Pair("to reach the target", "Reach The Target"),
+        Pair("you are very close", "You Are Very Close"),
         Pair("save ₹", "Save ₹"),
         Pair("save rs", "Save Rs"),
         Pair("add ₹", "Add ₹"),
@@ -145,8 +202,30 @@ object SmartAiClassifier {
         Pair("secret trick", "Secret Trick"),
         Pair("guaranteed returns", "Guaranteed Returns"),
         Pair("get rich quick", "Get Rich Quick"),
-        Pair("become a crorepati", "Become A Crorepati")
+        Pair("become a crorepati", "Become A Crorepati"),
+        Pair("tap to win", "Tap To Win"),
+        Pair("tap to claim", "Tap To Claim"),
+        Pair("claim now", "Claim Now"),
+        Pair("claim reward", "Claim Reward"),
+        Pair("grab now", "Grab Now"),
+        Pair("hurry! only", "Hurry! Urgency Bait")
     )
+
+    /**
+     * Normalizes text by decomposing stylized Unicode characters (e.g. bold/italic math fonts
+     * used by spammers like '𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸' or '𝓯𝓻𝓮𝓮') into standard ASCII equivalents,
+     * stripping zero-width spaces, and trimming.
+     */
+    fun normalizeSpamText(input: String?): String {
+        if (input.isNullOrBlank()) return ""
+        // 1. Remove zero-width characters (e.g. \u200B, \u200C, \u200D, \uFEFF)
+        val stripped = input.replace(Regex("[\u200B-\u200D\uFEFF]"), "")
+        // 2. Normalize via NFKD (decomposes mathematical bold, italic, script, fullwidth characters to ASCII)
+        val nfkd = Normalizer.normalize(stripped, Normalizer.Form.NFKD)
+        // 3. Strip combining diacritical marks
+        val clean = nfkd.replace(Regex("\\p{M}+"), "")
+        return clean.lowercase(Locale.ROOT).trim()
+    }
 
     /**
      * Classifies a notification payload with AI heuristics.
@@ -160,16 +239,20 @@ object SmartAiClassifier {
         val title = payload.title?.trim() ?: ""
         val text = payload.text?.trim() ?: ""
         val subText = payload.subText?.trim() ?: ""
+        val actionsCombined = payload.actions.joinToString(" ").trim()
 
-        if (title.isEmpty() && text.isEmpty()) {
+        if (title.isEmpty() && text.isEmpty() && actionsCombined.isEmpty()) {
             return AiResult(isSpam = false, reason = "Empty notification")
         }
 
-        val combinedContent = buildString {
+        val rawCombined = buildString {
             if (title.isNotEmpty()) append(title).append(" ")
             if (text.isNotEmpty()) append(text).append(" ")
-            if (subText.isNotEmpty()) append(subText)
-        }.lowercase(Locale.ROOT)
+            if (subText.isNotEmpty()) append(subText).append(" ")
+            if (actionsCombined.isNotEmpty()) append(actionsCombined)
+        }
+
+        val combinedContent = normalizeSpamText(rawCombined)
 
         // Safety check: Never flag transactional, security, or delivery notifications
         for (safe in SAFE_PATTERNS) {
@@ -192,7 +275,7 @@ object SmartAiClassifier {
             }
         }
 
-        // Check 2: Financial Bait
+        // Check 2: Financial, Giveaway & Fintech Bait
         for ((pattern, label) in FINANCIAL_BAIT_TRIGGERS) {
             if (combinedContent.contains(pattern)) {
                 val extracted = extractRefinedKeyword(title, text, pattern, label)
@@ -201,7 +284,7 @@ object SmartAiClassifier {
                     category = AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT,
                     primaryKeyword = extracted,
                     confidence = 0.95f,
-                    reason = "Financial / Gamified reward bait detected: '$extracted'"
+                    reason = "Financial / Giveaway reward bait detected: '$extracted'"
                 )
             }
         }
@@ -234,8 +317,8 @@ object SmartAiClassifier {
             }
         }
 
-        // Check 5: Currency Bait Heuristic (e.g., "Win ₹ 500", "Get ₹ 100", "Save ₹ 50")
-        val currencyRegex = Regex("(?:win|save|get|claim|add)\\s*(?:₹|rs\\.?|\\$)\\s*\\d+", RegexOption.IGNORE_CASE)
+        // Check 5: Reward / Currency Claim Regex (e.g. "Claim my Rs. 12.00", "Win ₹500", "Grab Rs 100", "Save ₹ 50")
+        val currencyRegex = Regex("(?:claim|get|win|grab|earn|save|add)\\s+(?:my\\s+|your\\s+)?(?:₹|rs\\.?|\\$)\\s*\\d+", RegexOption.IGNORE_CASE)
         val currencyMatch = currencyRegex.find(combinedContent)
         if (currencyMatch != null) {
             val matchedVal = currencyMatch.value.trim()
@@ -243,8 +326,22 @@ object SmartAiClassifier {
                 isSpam = true,
                 category = AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT,
                 primaryKeyword = matchedVal,
-                confidence = 0.91f,
-                reason = "Promotional currency incentive detected: '$matchedVal'"
+                confidence = 0.94f,
+                reason = "Promotional reward / currency incentive detected: '$matchedVal'"
+            )
+        }
+
+        // Check 6: Prize / Gadget Giveaway Regex (e.g. "Win an iPhone 17", "Won a smartphone", "Win a car")
+        val giveawayRegex = Regex("(?:win|won)\\s+(?:an?|the)?\\s*(?:iphone|phone|smartphone|car|bike|gold|laptop|ipad|macbook|voucher)", RegexOption.IGNORE_CASE)
+        val giveawayMatch = giveawayRegex.find(combinedContent)
+        if (giveawayMatch != null) {
+            val matchedVal = giveawayMatch.value.trim()
+            return AiResult(
+                isSpam = true,
+                category = AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT,
+                primaryKeyword = matchedVal,
+                confidence = 0.95f,
+                reason = "Promotional giveaway bait detected: '$matchedVal'"
             )
         }
 
@@ -260,28 +357,21 @@ object SmartAiClassifier {
         matchedPattern: String,
         defaultLabel: String
     ): String {
-        // 1. If title contains the pattern, extract the title clause or pattern
-        if (title.isNotEmpty()) {
-            val titleLower = title.lowercase(Locale.ROOT)
-            val patternIdx = titleLower.indexOf(matchedPattern)
-            if (patternIdx != -1) {
-                // Return segment of title surrounding the pattern or clean phrase
-                val clause = title.substring(patternIdx).split(Regex("[,:;•|!\\n]"))[0].trim()
-                if (clause.length in 4..35) {
-                    return clause
-                }
+        val normTitle = normalizeSpamText(title)
+        val titleIdx = normTitle.indexOf(matchedPattern)
+        if (titleIdx != -1) {
+            val clause = normTitle.substring(titleIdx).split(Regex("[,:;•|!\\n]"))[0].trim()
+            if (clause.length in 4..35) {
+                return clause.split(" ").take(4).joinToString(" ").replaceFirstChar { it.uppercase() }
             }
         }
 
-        // 2. If text contains the pattern, extract the relevant phrase
-        if (text.isNotEmpty()) {
-            val textLower = text.lowercase(Locale.ROOT)
-            val patternIdx = textLower.indexOf(matchedPattern)
-            if (patternIdx != -1) {
-                val clause = text.substring(patternIdx).split(Regex("[,:;•|!\\n]"))[0].trim()
-                if (clause.length in 4..35) {
-                    return clause
-                }
+        val normText = normalizeSpamText(text)
+        val textIdx = normText.indexOf(matchedPattern)
+        if (textIdx != -1) {
+            val clause = normText.substring(textIdx).split(Regex("[,:;•|!\\n]"))[0].trim()
+            if (clause.length in 4..35) {
+                return clause.split(" ").take(4).joinToString(" ").replaceFirstChar { it.uppercase() }
             }
         }
 

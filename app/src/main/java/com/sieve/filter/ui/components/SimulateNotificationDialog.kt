@@ -63,6 +63,20 @@ data class NotificationPreset(
 
 val PRESETS = listOf(
     NotificationPreset(
+        label = "super.money: Win iPhone 17 (AI Spam)",
+        packageName = "money.super.payments",
+        title = "Win an iPhone 17! 🤩 📱",
+        text = "Just apply for your superCard & become our top spender to win. Tap to apply now! 🚀",
+        channelId = "moe_default_channel"
+    ),
+    NotificationPreset(
+        label = "Navi: Rs. 12 Cashback (AI Spam)",
+        packageName = "com.naviapp",
+        title = "Rs. 12.00 🎉",
+        text = "Congratulations! Get 𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸 on your prepaid recharge.",
+        channelId = "navi.channel"
+    ),
+    NotificationPreset(
         label = "Jar: Save ₹10 Target (AI Spam)",
         packageName = "com.mysave.jar",
         title = "Save ₹10 to reach the target",

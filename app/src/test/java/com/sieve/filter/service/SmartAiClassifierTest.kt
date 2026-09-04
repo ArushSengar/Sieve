@@ -140,4 +140,44 @@ class SmartAiClassifierTest {
         assertTrue("Generic currency bait must be detected", result.isSpam)
         assertEquals(AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT, result.category)
     }
+
+    @Test
+    fun testSuperMoneyIphoneGiveaway_DetectedAsFinancialBait() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "money.super.payments",
+            title = "Win an iPhone 17! 🤩 📱",
+            text = "Just apply for your superCard & become our top spender to win. Tap to apply now! 🚀",
+            channelId = "moe_default_channel"
+        )
+
+        val result = SmartAiClassifier.classify(payload)
+
+        assertTrue("super.money iPhone giveaway & card apply trap must be flagged as spam", result.isSpam)
+        assertEquals(AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT, result.category)
+        assertTrue("Extracted keyword should identify bait", result.primaryKeyword.isNotEmpty())
+    }
+
+    @Test
+    fun testNaviUnicodeCashbackBait_DetectedAsFinancialBait() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.naviapp",
+            title = "Rs. 12.00 🎉",
+            text = "Congratulations! Get 𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸 on your prepaid recharge.",
+            channelId = "navi.channel",
+            actions = listOf("Claim my Rs. 12.00 ✅")
+        )
+
+        val result = SmartAiClassifier.classify(payload)
+
+        assertTrue("Navi stylized Unicode cashback & claim bait must be flagged as spam", result.isSpam)
+        assertEquals(AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT, result.category)
+        assertTrue("Extracted keyword should identify cashback/claim", result.primaryKeyword.isNotEmpty())
+    }
+
+    @Test
+    fun testNormalizeSpamText_DeobfuscatesUnicodeMathFonts() {
+        val stylized = "Congratulations! Get 𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸 on your prepaid recharge."
+        val normalized = SmartAiClassifier.normalizeSpamText(stylized)
+        assertTrue("Stylized bold math font must be normalized to standard ASCII", normalized.contains("cashback"))
+    }
 }

@@ -40,7 +40,13 @@ object NotificationClassifier {
         "cashback",
         "rewards",
         "recommendation",
-        "trending"
+        "trending",
+        "nudge",
+        "nudges",
+        "announcement",
+        "announcements",
+        "broadcast",
+        "broadcasts"
     )
 
     private val IMPORTANT_CHANNEL_KEYWORDS = listOf(
@@ -77,7 +83,8 @@ object NotificationClassifier {
         val subText: String? = null,
         val channelId: String? = null,
         val channelName: String? = null,
-        val isOngoing: Boolean = false
+        val isOngoing: Boolean = false,
+        val actions: List<String> = emptyList()
     )
 
     /**
@@ -109,19 +116,21 @@ object NotificationClassifier {
         val hasTitle = !payload.title.isNullOrBlank()
         val hasText = !payload.text.isNullOrBlank()
         val hasSubText = !payload.subText.isNullOrBlank()
+        val hasActions = payload.actions.isNotEmpty()
 
         // Short-circuit: empty notification with no text
-        if (!hasTitle && !hasText && !hasSubText) {
+        if (!hasTitle && !hasText && !hasSubText && !hasActions) {
             return FilterDecision.passThrough("Empty notification content")
         }
 
-        val combinedContent = buildString {
+        val rawContent = buildString {
             if (hasTitle) append(payload.title).append(" ")
             if (hasText) append(payload.text).append(" ")
-            if (hasSubText) append(payload.subText)
+            if (hasSubText) append(payload.subText).append(" ")
+            if (hasActions) append(payload.actions.joinToString(" "))
         }.trim()
 
-        val normalizedContent = combinedContent.lowercase(Locale.ROOT)
+        val normalizedContent = SmartAiClassifier.normalizeSpamText(rawContent)
 
         // 2. Channel Introspection
         val channelIdentifier = buildString {

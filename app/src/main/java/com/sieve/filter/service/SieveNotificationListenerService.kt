@@ -33,12 +33,15 @@ class SieveNotificationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
+        instance = this
         _isListening.value = true
         Log.i(TAG, "Sieve NotificationListenerService connected and actively filtering.")
+        sweepActiveNotifications()
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
+        if (instance == this) instance = null
         _isListening.value = false
         Log.w(TAG, "Sieve NotificationListenerService disconnected! Attempting rebind...")
         tryRebind(this)
@@ -46,13 +49,46 @@ class SieveNotificationListenerService : NotificationListenerService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (instance == this) instance = null
         _isListening.value = false
+    }
+
+    /**
+     * Sweeps all currently active notifications in the status bar/shade and dismisses any spam.
+     */
+    fun sweepActiveNotifications() {
+        val active = try {
+            activeNotifications
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to query activeNotifications", e)
+            null
+        } ?: return
+
+        Log.i(TAG, "🧹 Sweeping ${active.size} active notifications in shade...")
+        serviceScope.launch {
+            for (sbn in active) {
+                try {
+                    processNotification(sbn)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error sweeping active notification: ${sbn.packageName}", e)
+                }
+            }
+        }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         if (sbn == null) return
+        serviceScope.launch {
+            try {
+                processNotification(sbn)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in onNotificationPosted for ${sbn.packageName}", e)
+            }
+        }
+    }
 
+    private suspend fun processNotification(sbn: StatusBarNotification) {
         val packageName = sbn.packageName ?: return
 
         // Guard: Don't process Sieve's own notifications
@@ -71,9 +107,17 @@ class SieveNotificationListenerService : NotificationListenerService() {
 
         // Extract metadata
         val title = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString()
-        val text = extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString()
-            ?: extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
+        val rawText = extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString()
+        val bigText = extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
         val subText = extras?.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()
+
+        val text = if (!bigText.isNullOrBlank() && bigText != rawText) {
+            if (rawText.isNullOrBlank()) bigText else "$rawText $bigText"
+        } else {
+            rawText ?: bigText
+        }
+
+        val actionTitles = notification.actions?.mapNotNull { it.title?.toString() } ?: emptyList()
         val channelId = notification.channelId
         val isOngoing = (notification.flags and Notification.FLAG_ONGOING_EVENT) != 0 || sbn.isOngoing
 
@@ -96,18 +140,16 @@ class SieveNotificationListenerService : NotificationListenerService() {
 
             if (isDuplicate) {
                 cancelNotification(sbn.key)
-                serviceScope.launch {
-                    try {
-                        SieveApplication.instance.repository.logBlockedNotification(
-                            packageName = packageName,
-                            title = title,
-                            textSnippet = text,
-                            channelId = channelId,
-                            matchedRule = "Anti-Flooding: Duplicate (< 10m)"
-                        )
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error logging dedup block", e)
-                    }
+                try {
+                    SieveApplication.instance.repository.logBlockedNotification(
+                        packageName = packageName,
+                        title = title,
+                        textSnippet = text,
+                        channelId = channelId,
+                        matchedRule = "Anti-Flooding: Duplicate (< 10m)"
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error logging dedup block", e)
                 }
                 Log.i(TAG, "🛡️ [DEDUP BLOCKED] pkg=$packageName | title='$title' (Duplicate within 10m)")
                 return
@@ -127,89 +169,92 @@ class SieveNotificationListenerService : NotificationListenerService() {
             channelName = ranking.channel?.name?.toString()
         }
 
-        Log.d(TAG, "onNotificationPosted: pkg=$packageName, title='$title', channel=$channelId ($channelName), ongoing=$isOngoing")
+        val repository = SieveApplication.instance.repository
 
-        serviceScope.launch {
-            try {
-                val repository = SieveApplication.instance.repository
+        // 1. Fetch current app rule for this package
+        val appRuleEntity = repository.getAppRuleSync(packageName)
+        val appMode = appRuleEntity?.getAppRuleMode() ?: AppRuleMode.AUTO
 
-                // 1. Fetch current app rule for this package
-                val appRuleEntity = repository.getAppRuleSync(packageName)
-                val appMode = appRuleEntity?.getAppRuleMode() ?: AppRuleMode.AUTO
+        // 2. Fetch keyword rules relevant to this package + global rules
+        val rules = repository.getRulesForPackageSync(packageName)
 
-                // 2. Fetch keyword rules relevant to this package + global rules
-                val rules = repository.getRulesForPackageSync(packageName)
+        // 3. Classify notification
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = packageName,
+            title = title,
+            text = text,
+            subText = subText,
+            channelId = channelId,
+            channelName = channelName,
+            isOngoing = isOngoing,
+            actions = actionTitles
+        )
 
-                // 3. Classify notification
-                val payload = NotificationClassifier.NotificationPayload(
+        val decision = NotificationClassifier.classify(
+            payload = payload,
+            appRuleMode = appMode,
+            rules = rules
+        )
+
+        if (decision.shouldDismiss) {
+            // Cancel notification immediately
+            cancelNotification(sbn.key)
+
+            // Record in Room SQLite BlockLog
+            repository.logBlockedNotification(
+                packageName = packageName,
+                title = title,
+                textSnippet = text,
+                channelId = channelId,
+                matchedRule = decision.matchedRule
+            )
+
+            Log.i(TAG, "🛡️ [BLOCKED] pkg=$packageName | title='$title' | matched=${decision.matchedRule}")
+        } else if (decision.isPassThrough && prefs.isAiFilterEnabled.value) {
+            // 4. On-Device AI Classification for notifications not matched by predefined keywords
+            val aiResult = SmartAiClassifier.classify(payload)
+            if (aiResult.isSpam) {
+                cancelNotification(sbn.key)
+
+                val aiRuleTag = "AI: ${aiResult.category} (${aiResult.primaryKeyword})"
+                repository.logBlockedNotification(
                     packageName = packageName,
                     title = title,
-                    text = text,
-                    subText = subText,
+                    textSnippet = text,
                     channelId = channelId,
-                    channelName = channelName,
-                    isOngoing = isOngoing
+                    matchedRule = aiRuleTag
                 )
 
-                val decision = NotificationClassifier.classify(
-                    payload = payload,
-                    appRuleMode = appMode,
-                    rules = rules
+                repository.recordAiSuggestion(
+                    packageName = packageName,
+                    suggestedKeyword = aiResult.primaryKeyword,
+                    category = aiResult.category,
+                    sampleTitle = title,
+                    sampleText = text
                 )
 
-                if (decision.shouldDismiss) {
-                    // Cancel notification immediately
-                    cancelNotification(sbn.key)
-
-                    // Record in Room SQLite BlockLog
-                    repository.logBlockedNotification(
-                        packageName = packageName,
-                        title = title,
-                        textSnippet = text,
-                        channelId = channelId,
-                        matchedRule = decision.matchedRule
-                    )
-
-                    Log.i(TAG, "🛡️ [BLOCKED] pkg=$packageName | title='$title' | matched=${decision.matchedRule}")
-                } else if (decision.isPassThrough && prefs.isAiFilterEnabled.value) {
-                    // 4. On-Device AI Classification for notifications not matched by predefined keywords
-                    val aiResult = SmartAiClassifier.classify(payload)
-                    if (aiResult.isSpam) {
-                        cancelNotification(sbn.key)
-
-                        val aiRuleTag = "AI: ${aiResult.category} (${aiResult.primaryKeyword})"
-                        repository.logBlockedNotification(
-                            packageName = packageName,
-                            title = title,
-                            textSnippet = text,
-                            channelId = channelId,
-                            matchedRule = aiRuleTag
-                        )
-
-                        repository.recordAiSuggestion(
-                            packageName = packageName,
-                            suggestedKeyword = aiResult.primaryKeyword,
-                            category = aiResult.category,
-                            sampleTitle = title,
-                            sampleText = text
-                        )
-
-                        Log.i(TAG, "🤖 [AI BLOCKED] pkg=$packageName | keyword='${aiResult.primaryKeyword}' | cat=${aiResult.category} | title='$title'")
-                    } else {
-                        Log.d(TAG, "✅ [ALLOWED - AI SAFE] pkg=$packageName | title='$title' | reason=${aiResult.reason}")
-                    }
-                } else {
-                    Log.d(TAG, "✅ [ALLOWED] pkg=$packageName | title='$title' | reason=${decision.reason}")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error filtering notification from $packageName", e)
+                Log.i(TAG, "🤖 [AI BLOCKED] pkg=$packageName | keyword='${aiResult.primaryKeyword}' | cat=${aiResult.category} | title='$title'")
+            } else {
+                Log.d(TAG, "✅ [ALLOWED - AI SAFE] pkg=$packageName | title='$title' | reason=${aiResult.reason}")
             }
+        } else {
+            Log.d(TAG, "✅ [ALLOWED] pkg=$packageName | title='$title' | reason=${decision.reason}")
         }
     }
 
     companion object {
         private const val TAG = "SieveFilter"
         private const val DEDUP_WINDOW_MS = 10 * 60 * 1000L // 10 minutes
+
+        @Volatile
+        private var instance: SieveNotificationListenerService? = null
+
+        /**
+         * Triggers an active status bar sweep from any component (e.g. MainActivity on resume).
+         */
+        fun sweepActiveNotificationsInstance() {
+            instance?.sweepActiveNotifications()
+        }
 
         // LRU Cache for notification deduplication (max 100 entries)
         private val recentNotificationTimestamps = object : LinkedHashMap<String, Long>(100, 0.75f, true) {

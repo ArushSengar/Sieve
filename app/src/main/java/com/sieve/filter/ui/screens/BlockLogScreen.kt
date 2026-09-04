@@ -55,6 +55,12 @@ import com.sieve.filter.ui.theme.BlockRedBg
 import com.sieve.filter.ui.viewmodel.BlockLogDisplayItem
 import com.sieve.filter.ui.viewmodel.BlockLogViewModel
 
+import androidx.compose.material.icons.filled.Science
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.sieve.filter.ui.components.SimulateNotificationDialog
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlockLogScreen(
@@ -62,6 +68,7 @@ fun BlockLogScreen(
 ) {
     val logs by viewModel.logs.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    var showSimulateDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -71,7 +78,7 @@ fun BlockLogScreen(
         // Permission Status Banner
         PermissionBanner()
 
-        // Search Bar & Clear Action Header
+        // Search Bar, Simulate Test Button & Clear Action Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -90,8 +97,19 @@ fun BlockLogScreen(
                 modifier = Modifier.weight(1f)
             )
 
+            Spacer(modifier = Modifier.width(8.dp))
+
+            IconButton(
+                onClick = { showSimulateDialog = true }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Science,
+                    contentDescription = "Simulate & Test Notification",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
             if (logs.isNotEmpty()) {
-                Spacer(modifier = Modifier.width(8.dp))
                 IconButton(onClick = viewModel::clearAllLogs) {
                     Icon(
                         imageVector = Icons.Default.ClearAll,
@@ -100,6 +118,12 @@ fun BlockLogScreen(
                     )
                 }
             }
+        }
+
+        if (showSimulateDialog) {
+            SimulateNotificationDialog(
+                onDismiss = { showSimulateDialog = false }
+            )
         }
 
         if (logs.isEmpty()) {

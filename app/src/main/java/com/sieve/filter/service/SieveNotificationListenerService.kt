@@ -49,7 +49,14 @@ class SieveNotificationListenerService : NotificationListenerService() {
         val channelId = notification.channelId
         val isOngoing = (notification.flags and Notification.FLAG_ONGOING_EVENT) != 0 || sbn.isOngoing
 
-        Log.d(TAG, "onNotificationPosted: pkg=$packageName, title='$title', channel=$channelId, ongoing=$isOngoing")
+        // Channel introspection via RankingMap
+        val ranking = Ranking()
+        var channelName: String? = null
+        if (currentRanking != null && currentRanking.getRanking(sbn.key, ranking)) {
+            channelName = ranking.channel?.name?.toString()
+        }
+
+        Log.d(TAG, "onNotificationPosted: pkg=$packageName, title='$title', channel=$channelId ($channelName), ongoing=$isOngoing")
 
         serviceScope.launch {
             try {
@@ -69,6 +76,7 @@ class SieveNotificationListenerService : NotificationListenerService() {
                     text = text,
                     subText = subText,
                     channelId = channelId,
+                    channelName = channelName,
                     isOngoing = isOngoing
                 )
 

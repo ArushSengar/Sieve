@@ -23,13 +23,13 @@ Auto-dismisses promotional spam, financial bait, gamification traps, and catalog
 
 <div align="center">
 
-| AI Suggestions Queue | Live Block Log | Keyword Rules & Sandbox |
+| AI Suggestions Queue | Live Block Log | Keyword Rules |
 | :---: | :---: | :---: |
 | <img src="docs/screenshots/01_ai_suggestions.png" width="250" alt="AI Suggestions Queue" /> | <img src="docs/screenshots/02_block_log.png" width="250" alt="Block Log" /> | <img src="docs/screenshots/03_keyword_rules.png" width="250" alt="Keyword Rules" /> |
 
-| On-Device AI Engine Settings | Live Simulation Sandbox |
-| :---: | :---: |
-| <img src="docs/screenshots/04_settings_ai_engine.png" width="250" alt="Settings & AI Filter" /> | <img src="docs/screenshots/05_simulation_sandbox.png" width="250" alt="Simulation Dialog" /> |
+| On-Device AI Engine | App Rules Control | Real-Time Analytics | Live Simulation Sandbox |
+| :---: | :---: | :---: | :---: |
+| <img src="docs/screenshots/04_settings_ai_engine.png" width="250" alt="Settings & AI Filter" /> | <img src="docs/screenshots/06_app_rules.png" width="250" alt="App Rules" /> | <img src="docs/screenshots/07_stats_analytics.png" width="250" alt="Stats & Analytics" /> | <img src="docs/screenshots/05_simulation_sandbox.png" width="250" alt="Simulation Dialog" /> |
 
 </div>
 

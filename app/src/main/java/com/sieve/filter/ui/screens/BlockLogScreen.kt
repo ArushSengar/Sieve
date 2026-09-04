@@ -317,9 +317,9 @@ fun BlockLogItemCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Footer: Matched Rule badge & Actions
+            // Footer: Matched Rule badge
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -360,50 +360,58 @@ fun BlockLogItemCard(
                         )
                     }
                 }
+            }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (isAiBlocked && !extractedKeyword.isNullOrBlank() && onVerifyKeyword != null) {
-                        OutlinedButton(
-                            onClick = { onVerifyKeyword(extractedKeyword, null) },
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = AiPurple,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Verify Keyword",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = AiPurple,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
+            Spacer(modifier = Modifier.height(10.dp))
 
-                    // Quick Action: Always Allow
+            // Action buttons row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isAiBlocked && !extractedKeyword.isNullOrBlank() && onVerifyKeyword != null) {
                     OutlinedButton(
-                        onClick = onAlwaysAllow,
+                        onClick = { onVerifyKeyword(extractedKeyword, null) },
                         shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Check,
+                            imageVector = Icons.Default.AutoAwesome,
                             contentDescription = null,
-                            tint = AllowGreen,
+                            tint = AiPurple,
                             modifier = Modifier.size(14.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Always Allow",
+                            text = "Verify Keyword",
                             style = MaterialTheme.typography.labelMedium,
-                            color = AllowGreen,
+                            color = AiPurple,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
+                // Quick Action: Always Allow
+                OutlinedButton(
+                    onClick = onAlwaysAllow,
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = AllowGreen,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Always Allow",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AllowGreen,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }

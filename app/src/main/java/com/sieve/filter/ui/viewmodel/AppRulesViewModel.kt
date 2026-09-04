@@ -27,6 +27,9 @@ class AppRulesViewModel(application: Application) : AndroidViewModel(application
 
     private val _installedApps = MutableStateFlow<List<AppInfo>>(emptyList())
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     init {
         loadInstalledApps()
     }
@@ -74,9 +77,6 @@ class AppRulesViewModel(application: Application) : AndroidViewModel(application
             repository.setAppRule(packageName, mode)
         }
     }
-
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading
 
     private fun loadInstalledApps() {
         viewModelScope.launch(Dispatchers.IO) {

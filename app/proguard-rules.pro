@@ -37,8 +37,9 @@
 # --------------- AndroidX ---------------
 -keep class androidx.lifecycle.** { *; }
 -keepclassmembers class * extends androidx.lifecycle.ViewModel {
-    <init>();
+    <init>(...);
 }
+-keep class com.sieve.filter.ui.viewmodel.** { *; }
 
 # --------------- Notification Listener Service ---------------
 -keep class com.sieve.filter.service.SieveNotificationListenerService { *; }

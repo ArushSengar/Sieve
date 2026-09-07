@@ -50,4 +50,7 @@ interface BlockLogDao {
 
     @Query("DELETE FROM block_logs WHERE timestamp < :cutoffTimestamp")
     suspend fun pruneLogsOlderThan(cutoffTimestamp: Long): Int
+
+    @Query("DELETE FROM block_logs WHERE package_name IN (:packageNames) AND matched_rule LIKE 'Anti-Flooding%'")
+    suspend fun purgeFalsePositiveDedupLogs(packageNames: List<String>): Int
 }

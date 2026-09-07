@@ -200,6 +200,13 @@ class SieveRepository(
     }
 
     /**
+     * Purges legacy false-positive duplicate logs for protected communication packages.
+     */
+    suspend fun purgeFalsePositiveDedupLogs(packageNames: List<String>): Int = withContext(Dispatchers.IO) {
+        blockLogDao.purgeFalsePositiveDedupLogs(packageNames)
+    }
+
+    /**
      * Exports block logs as a formatted CSV string.
      */
     suspend fun exportLogsCsv(): String = withContext(Dispatchers.IO) {

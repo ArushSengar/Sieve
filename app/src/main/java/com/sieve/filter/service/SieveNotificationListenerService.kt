@@ -12,6 +12,7 @@ import android.text.TextUtils
 import android.util.Log
 import com.sieve.filter.SieveApplication
 import com.sieve.filter.model.AppRuleMode
+import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,6 +37,21 @@ class SieveNotificationListenerService : NotificationListenerService() {
         instance = this
         _isListening.value = true
         Log.i(TAG, "Sieve NotificationListenerService connected and actively filtering.")
+
+        // Clean up legacy false-positive duplicate records for communication apps
+        serviceScope.launch {
+            try {
+                val purged = SieveApplication.instance.repository.purgeFalsePositiveDedupLogs(
+                    PROTECTED_COMMUNICATION_PACKAGES.toList() + listOf("com.amazon.dee.app")
+                )
+                if (purged > 0) {
+                    Log.i(TAG, "🧹 Purged $purged legacy false-positive deduplication records from BlockLog.")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error purging false-positive records", e)
+            }
+        }
+
         sweepActiveNotifications()
     }
 
@@ -68,7 +84,7 @@ class SieveNotificationListenerService : NotificationListenerService() {
         serviceScope.launch {
             for (sbn in active) {
                 try {
-                    processNotification(sbn)
+                    processNotification(sbn, isSweep = true)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error sweeping active notification: ${sbn.packageName}", e)
                 }
@@ -81,14 +97,14 @@ class SieveNotificationListenerService : NotificationListenerService() {
         if (sbn == null) return
         serviceScope.launch {
             try {
-                processNotification(sbn)
+                processNotification(sbn, isSweep = false)
             } catch (e: Exception) {
                 Log.e(TAG, "Error in onNotificationPosted for ${sbn.packageName}", e)
             }
         }
     }
 
-    private suspend fun processNotification(sbn: StatusBarNotification) {
+    private suspend fun processNotification(sbn: StatusBarNotification, isSweep: Boolean = false) {
         val packageName = sbn.packageName ?: return
 
         // Guard: Don't process Sieve's own notifications
@@ -103,6 +119,30 @@ class SieveNotificationListenerService : NotificationListenerService() {
         }
 
         val notification = sbn.notification ?: return
+
+        // 1. Guard: Sticky, ongoing, media player, navigation, and foreground services are NEVER touched
+        val isOngoing = (notification.flags and Notification.FLAG_ONGOING_EVENT) != 0 ||
+                        (notification.flags and Notification.FLAG_NO_CLEAR) != 0 ||
+                        (notification.flags and Notification.FLAG_FOREGROUND_SERVICE) != 0 ||
+                        sbn.isOngoing
+
+        if (isOngoing) {
+            Log.d(TAG, "✅ [ALLOWED - ONGOING/SERVICE] pkg=$packageName | Sticky or foreground service protected")
+            return
+        }
+
+        val repository = SieveApplication.instance.repository
+
+        // 2. HIGHEST PRIORITY: Per-App Override Rule
+        // If an app is set to Always Allow (e.g. WhatsApp, Truecaller, Discord), exit immediately.
+        val appRuleEntity = repository.getAppRuleSync(packageName)
+        val appMode = appRuleEntity?.getAppRuleMode() ?: AppRuleMode.AUTO
+
+        if (appMode == AppRuleMode.ALLOW) {
+            Log.d(TAG, "✅ [ALLOWED - APP RULE] pkg=$packageName | Set to Always Allow")
+            return
+        }
+
         val extras = notification.extras
 
         // Extract metadata
@@ -119,41 +159,23 @@ class SieveNotificationListenerService : NotificationListenerService() {
 
         val actionTitles = notification.actions?.mapNotNull { it.title?.toString() } ?: emptyList()
         val channelId = notification.channelId
-        val isOngoing = (notification.flags and Notification.FLAG_ONGOING_EVENT) != 0 || sbn.isOngoing
 
-        // Guard: Never touch ongoing notifications (music, call, navigation)
-        if (isOngoing) return
+        val category = notification.category
+        val isCommunicationApp = PROTECTED_COMMUNICATION_PACKAGES.contains(packageName.lowercase(Locale.ROOT))
+        val isProtectedCategory = category != null && PROTECTED_NOTIFICATION_CATEGORIES.contains(category)
 
-        // Anti-Flooding / Deduplication check
-        if (prefs.isDeduplicationEnabled.value && !title.isNullOrBlank()) {
-            val dedupKey = "$packageName|${title.trim()}|${text?.trim() ?: ""}"
-            val now = System.currentTimeMillis()
-            val isDuplicate = synchronized(recentNotificationTimestamps) {
-                val lastSeen = recentNotificationTimestamps[dedupKey]
-                if (lastSeen != null && (now - lastSeen) < DEDUP_WINDOW_MS) {
-                    true
-                } else {
-                    recentNotificationTimestamps[dedupKey] = now
-                    false
-                }
-            }
-
-            if (isDuplicate) {
-                cancelNotification(sbn.key)
-                try {
-                    SieveApplication.instance.repository.logBlockedNotification(
-                        packageName = packageName,
-                        title = title,
-                        textSnippet = text,
-                        channelId = channelId,
-                        matchedRule = "Anti-Flooding: Duplicate (< 10m)"
-                    )
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error logging dedup block", e)
-                }
-                Log.i(TAG, "🛡️ [DEDUP BLOCKED] pkg=$packageName | title='$title' (Duplicate within 10m)")
-                return
-            }
+        // 3. Fast Exit if App is set to Always Block
+        if (appMode == AppRuleMode.BLOCK) {
+            cancelNotification(sbn.key)
+            repository.logBlockedNotification(
+                packageName = packageName,
+                title = title,
+                textSnippet = text,
+                channelId = channelId,
+                matchedRule = "AppRule: BLOCK"
+            )
+            Log.i(TAG, "🛡️ [BLOCKED] pkg=$packageName | Set to Always Block")
+            return
         }
 
         // Channel introspection via RankingMap (requires API 31+)
@@ -169,16 +191,10 @@ class SieveNotificationListenerService : NotificationListenerService() {
             channelName = ranking.channel?.name?.toString()
         }
 
-        val repository = SieveApplication.instance.repository
-
-        // 1. Fetch current app rule for this package
-        val appRuleEntity = repository.getAppRuleSync(packageName)
-        val appMode = appRuleEntity?.getAppRuleMode() ?: AppRuleMode.AUTO
-
-        // 2. Fetch keyword rules relevant to this package + global rules
+        // 4. Fetch keyword rules relevant to this package + global rules
         val rules = repository.getRulesForPackageSync(packageName)
 
-        // 3. Classify notification
+        // 5. Classify notification
         val payload = NotificationClassifier.NotificationPayload(
             packageName = packageName,
             title = title,
@@ -210,8 +226,9 @@ class SieveNotificationListenerService : NotificationListenerService() {
             )
 
             Log.i(TAG, "🛡️ [BLOCKED] pkg=$packageName | title='$title' | matched=${decision.matchedRule}")
+            return
         } else if (decision.isPassThrough && prefs.isAiFilterEnabled.value) {
-            // 4. On-Device AI Classification for notifications not matched by predefined keywords
+            // 6. On-Device AI Classification for notifications not matched by predefined keywords
             val aiResult = SmartAiClassifier.classify(payload)
             if (aiResult.isSpam) {
                 cancelNotification(sbn.key)
@@ -234,17 +251,88 @@ class SieveNotificationListenerService : NotificationListenerService() {
                 )
 
                 Log.i(TAG, "🤖 [AI BLOCKED] pkg=$packageName | keyword='${aiResult.primaryKeyword}' | cat=${aiResult.category} | title='$title'")
+                return
             } else {
                 Log.d(TAG, "✅ [ALLOWED - AI SAFE] pkg=$packageName | title='$title' | reason=${aiResult.reason}")
             }
         } else {
             Log.d(TAG, "✅ [ALLOWED] pkg=$packageName | title='$title' | reason=${decision.reason}")
         }
+
+        // 7. Anti-Flooding Deduplication (STRICTLY SCOPED TO MARKETING/PROMO APPS)
+        // Never deduplicate communication apps (WhatsApp, Discord, Truecaller) or message/call categories.
+        // Never deduplicate during active shade sweeping.
+        if (!isSweep && !isCommunicationApp && !isProtectedCategory && prefs.isDeduplicationEnabled.value && !title.isNullOrBlank()) {
+            val dedupKey = "$packageName|${title.trim()}|${text?.trim() ?: ""}"
+            val now = System.currentTimeMillis()
+            val isDuplicate = synchronized(recentNotificationTimestamps) {
+                val lastSeen = recentNotificationTimestamps[dedupKey]
+                if (lastSeen != null && (now - lastSeen) < DEDUP_WINDOW_MS) {
+                    true
+                } else {
+                    recentNotificationTimestamps[dedupKey] = now
+                    false
+                }
+            }
+
+            if (isDuplicate) {
+                cancelNotification(sbn.key)
+                try {
+                    repository.logBlockedNotification(
+                        packageName = packageName,
+                        title = title,
+                        textSnippet = text,
+                        channelId = channelId,
+                        matchedRule = "Anti-Flooding: Duplicate (< 10m)"
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error logging dedup block", e)
+                }
+                Log.i(TAG, "🛡️ [DEDUP BLOCKED] pkg=$packageName | title='$title' (Duplicate within 10m)")
+                return
+            }
+        }
     }
 
     companion object {
         private const val TAG = "SieveFilter"
         private const val DEDUP_WINDOW_MS = 10 * 60 * 1000L // 10 minutes
+
+        // Communication packages that must NEVER be deduplicated or blocked by flood detection
+        val PROTECTED_COMMUNICATION_PACKAGES = setOf(
+            "com.whatsapp",
+            "com.whatsapp.w4b",
+            "org.telegram.messenger",
+            "org.thoughtcrime.securesms", // Signal
+            "com.google.android.apps.messaging",
+            "com.google.android.dialer",
+            "com.samsung.android.messaging",
+            "com.samsung.android.dialer",
+            "com.truecaller",
+            "com.discord",
+            "com.google.android.gm",
+            "com.microsoft.office.outlook",
+            "com.microsoft.teams",
+            "com.slack",
+            "com.skype.raider",
+            "com.facebook.orca", // Messenger
+            "com.instagram.android"
+        )
+
+        // Notification categories that must NEVER be touched by flood detection
+        val PROTECTED_NOTIFICATION_CATEGORIES = setOf(
+            Notification.CATEGORY_MESSAGE,
+            Notification.CATEGORY_CALL,
+            Notification.CATEGORY_EMAIL,
+            Notification.CATEGORY_ALARM,
+            Notification.CATEGORY_EVENT,
+            Notification.CATEGORY_REMINDER,
+            Notification.CATEGORY_NAVIGATION,
+            Notification.CATEGORY_TRANSPORT,
+            Notification.CATEGORY_WORKOUT,
+            Notification.CATEGORY_SERVICE,
+            Notification.CATEGORY_SYSTEM
+        )
 
         @Volatile
         private var instance: SieveNotificationListenerService? = null

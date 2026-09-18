@@ -99,8 +99,11 @@ object SmartAiClassifier {
         "refund successful",
         "return pickup",
         "return processed",
-        "delivered",
+        "order delivered",
+        "has been delivered",
+        "package delivered",
         "successfully delivered",
+        "item delivered",
 
         // Calls & Direct Communication
         "missed call",
@@ -126,6 +129,7 @@ object SmartAiClassifier {
         "com.discoverpilgrim",
         "com.jar.app",
         "com.naviapp",
+        "com.yield.curie_money",
         "com.zeptonow",
         "com.dunzo.user",
         "com.bigbasket.mobileapp",

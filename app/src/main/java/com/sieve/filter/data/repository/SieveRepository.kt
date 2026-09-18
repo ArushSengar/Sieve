@@ -162,7 +162,17 @@ class SieveRepository(
      */
     suspend fun syncUpgradedDefaultRules() = withContext(Dispatchers.IO) {
         val existingRules = keywordRuleDao.getAllRulesSync()
-        val existingGlobalPatterns = existingRules.filter { it.isGlobal }.map { it.pattern.lowercase() }.toSet()
+
+        // Clean up overbroad legacy global allow rules that marketing spammers exploit (e.g. "delivered" in "Get ... delivered at your doorstep!")
+        val overbroadLegacyAllowRules = existingRules.filter {
+            it.isGlobal && it.action == RuleAction.ALLOW.name && it.pattern.equals("delivered", ignoreCase = true)
+        }
+        for (rule in overbroadLegacyAllowRules) {
+            keywordRuleDao.deleteRule(rule)
+        }
+
+        val refreshedRules = if (overbroadLegacyAllowRules.isNotEmpty()) keywordRuleDao.getAllRulesSync() else existingRules
+        val existingGlobalPatterns = refreshedRules.filter { it.isGlobal }.map { it.pattern.lowercase() }.toSet()
 
         val newRules = mutableListOf<KeywordRuleEntity>()
         SieveDatabase.DEFAULT_BLOCK_KEYWORDS.forEach { pattern ->
@@ -175,8 +185,10 @@ class SieveRepository(
                 newRules.add(KeywordRuleEntity(packageName = null, pattern = pattern, action = RuleAction.ALLOW.name))
             }
         }
-        if (newRules.isNotEmpty()) {
-            keywordRuleDao.insertAll(newRules)
+        if (newRules.isNotEmpty() || overbroadLegacyAllowRules.isNotEmpty()) {
+            if (newRules.isNotEmpty()) {
+                keywordRuleDao.insertAll(newRules)
+            }
             NotificationClassifier.clearRegexCache()
             keywordRulesCache.clear()
         }

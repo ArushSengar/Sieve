@@ -103,7 +103,10 @@ abstract class SieveDatabase : RoomDatabase() {
         )
 
         val DEFAULT_ALLOW_KEYWORDS = listOf(
-            "delivered",
+            "order delivered",
+            "has been delivered",
+            "package delivered",
+            "successfully delivered",
             "out for delivery",
             "otp",
             "order confirmed",
@@ -116,7 +119,7 @@ abstract class SieveDatabase : RoomDatabase() {
             "driver arriving",
             "security code",
             "verification code",
-            "transit",
+            "in transit",
             "dispatched",
             "refund initiated",
             "refund processed",

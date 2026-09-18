@@ -277,5 +277,32 @@ class SmartAiClassifierTest {
 
         assertFalse("Genuine food order cooking / out for delivery notifications must NEVER be flagged as spam", result.isSpam)
     }
+
+    @Test
+    fun testBlinkitDoorstepDeliveryPromo_BlockedByCommercialShield() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.grofers.customerapp",
+            title = "Bappa's favourites 👇",
+            text = "Get modak, laddu & more delivered at your doorstep!"
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertTrue("Blinkit doorstep delivery marketing promo must be blocked by Commercial Shield", result.isSpam)
+        assertEquals(AiSuggestedRuleEntity.CAT_COMMERCIAL_PROMO, result.category)
+    }
+
+    @Test
+    fun testBlinkitGenuineOrderDelivered_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.grofers.customerapp",
+            title = "Blinkit: Order Delivered",
+            text = "Your order containing 5 items has been delivered. Enjoy!"
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertFalse("Genuine Blinkit order completed notification must NEVER be blocked", result.isSpam)
+    }
 }
 

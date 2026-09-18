@@ -45,6 +45,9 @@ class PreferencesManager(context: Context) {
     private val _isAiFilterEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_FILTER_ENABLED, true))
     val isAiFilterEnabled: StateFlow<Boolean> = _isAiFilterEnabled.asStateFlow()
 
+    private val _isCommercialShieldEnabled = MutableStateFlow(prefs.getBoolean(KEY_COMMERCIAL_SHIELD_ENABLED, true))
+    val isCommercialShieldEnabled: StateFlow<Boolean> = _isCommercialShieldEnabled.asStateFlow()
+
     fun setFilterEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_FILTER_ENABLED, enabled).apply()
         _isFilterEnabled.value = enabled
@@ -53,6 +56,11 @@ class PreferencesManager(context: Context) {
     fun setAiFilterEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_AI_FILTER_ENABLED, enabled).apply()
         _isAiFilterEnabled.value = enabled
+    }
+
+    fun setCommercialShieldEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_COMMERCIAL_SHIELD_ENABLED, enabled).apply()
+        _isCommercialShieldEnabled.value = enabled
     }
 
     fun setQuietHoursEnabled(enabled: Boolean) {
@@ -127,5 +135,6 @@ class PreferencesManager(context: Context) {
         private const val KEY_LOG_RETENTION_DAYS = "log_retention_days"
         private const val KEY_AMOLED_BLACK_MODE = "amoled_black_mode"
         private const val KEY_AI_FILTER_ENABLED = "ai_filter_enabled"
+        private const val KEY_COMMERCIAL_SHIELD_ENABLED = "commercial_shield_enabled"
     }
 }

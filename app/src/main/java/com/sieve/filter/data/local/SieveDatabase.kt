@@ -92,7 +92,14 @@ abstract class SieveDatabase : RoomDatabase() {
             "sale live",
             "mega sale",
             "hurry up",
-            "offer expires"
+            "offer expires",
+            "deal",
+            "deals",
+            "price drop",
+            "refer & earn",
+            "refer and earn",
+            "exclusive deal",
+            "lowest price"
         )
 
         val DEFAULT_ALLOW_KEYWORDS = listOf(
@@ -100,6 +107,9 @@ abstract class SieveDatabase : RoomDatabase() {
             "out for delivery",
             "otp",
             "order confirmed",
+            "order placed",
+            "order prepared",
+            "order update",
             "arriving",
             "on the way",
             "picked up",
@@ -107,7 +117,10 @@ abstract class SieveDatabase : RoomDatabase() {
             "security code",
             "verification code",
             "transit",
-            "dispatched"
+            "dispatched",
+            "refund initiated",
+            "refund processed",
+            "return pickup"
         )
     }
 

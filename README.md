@@ -11,7 +11,7 @@ Auto-dismisses promotional spam, financial bait, gamification traps, and catalog
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20On--Device%20%280%20Network%20Perms%29-brightgreen)](#)
 [![APK Size](https://img.shields.io/badge/APK%20Size-2.4%20MB-blue)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-24%2F24%20Passing-success)](#)
+[![Tests](https://img.shields.io/badge/Tests-31%2F31%20Passing-success)](#)
 
 [⬇️ **Download Latest APK (v1.1.0)**](https://github.com/ArushSengar/Sieve/releases/latest) • [Features](#-core-features) • [Screenshots](#-screenshots) • [Architecture](#-architecture) • [Battery Optimization](#-battery--performance-optimizations)
 
@@ -37,21 +37,40 @@ Auto-dismisses promotional spam, financial bait, gamification traps, and catalog
 
 ## ✨ Core Features
 
-### 🤖 1. Smart On-Device AI Spam Classifier
-Traditional keyword filters fail when apps disguise marketing without using obvious words like `sale` or `discount`. Sieve includes a **100% on-device heuristic NLP classifier** that detects sneaky marketing patterns:
+### 🛒 1. Smart E-Commerce Shield (Order Updates Only)
+Shopping and delivery apps frequently flood users with daily deal announcements, flash sales, and cart nudges.
+- **Transactional Delivery Protection:** When enabled, apps like **Flipkart, Amazon, Myntra, Domino's, Swiggy, Zomato, Blinkit, and Zepto** are restricted strictly to real order updates (e.g. *Order Confirmed*, *Out for Delivery*, *Baking*, *Shipped*, *Delivered*, OTPs).
+- **Automated Marketing Drop:** Any non-order marketing broadcasts (*"Grab the coolest deals now!"*, *"Fan of free pizzas?"*) are automatically dismissed without requiring constant keyword maintenance.
+
+### 🛡️ 2. Sticky Spam Loophole Defense
+- Spam and gamified apps abuse Android's `FLAG_NO_CLEAR` / `setOngoing(true)` to lock promotional cashback and loan ads onto the status bar so users cannot swipe them away.
+- Sieve's **Smart Ongoing Evaluator** inspects incoming ongoing notifications: legitimate foreground services (active navigation, media player playback, live voice calls, communication apps, and system services) are preserved, while sticky promotional banners are stripped and blocked.
+
+### 🔍 3. Deep Multi-Layer Notification Text Extraction
+- Modern apps hide promotional deal text inside rich notification styles. Sieve extracts and evaluates:
+  - `EXTRA_TITLE_BIG` (expanded multi-line headings)
+  - `EXTRA_TEXT_LINES` (`CharSequence[]` arrays used in `NotificationCompat.InboxStyle`)
+  - `EXTRA_SUMMARY_TEXT` & `EXTRA_INFO_TEXT` (sub-headers and category labels)
+  - Interactive action buttons (*"Claim Now"*, *"Apply Now"*)
+
+### 🤖 4. Smart On-Device AI Spam Classifier
+Traditional keyword filters fail when apps disguise marketing without using obvious words like `sale` or `discount`. Sieve includes an ultra-fast **100% on-device heuristic NLP classifier** that detects sneaky marketing patterns:
 - **Giveaway & Sweepstakes Bait (*super.money*):** *"Win an iPhone 17!"*, *"Top spender to win"*, *"Stand a chance to win"*
 - **Credit Card & Instant Loan Push (*Fintech*):** *"Just apply for your superCard"*, *"Tap to apply now"*, *"Pre-approved loan"*
-- **Financial / Savings Traps (*Jar*):** *"Save ₹10 to reach the target"*, *"You are very close!"*
+- **Financial / Savings Traps (*Jar*):** *"Save ₹10 to reach the target"*, *"Arush Sengar, CASHBACK OFFER"*, *"Win Cashback up to ₹5,000"*
+- **Referral Bounties (*Navi*):** *"Refer & Earn Rs. 30"*, *"Refer a friend, get Rs. 30 each for your next buy"*
+- **Loyalty & Freebie Bait (*Domino's*):** *"Fan of Free Pizzas?"*, *"Cheesy Rewards Journey"*
+- **Social Gamification & Daily Puzzles (*LinkedIn*):** *"Zip #550: Beat your record"*, *"How will you play?"*
 - **Social FOMO / Engagement Bait (*Truecaller*):** *"New profile views you missed this week"*, *"Introducing VIP Rewards 🎉"*
 - **Catalog Drops & Apparel Hooks (*Bewakoof*):** *"Solid Joggers, Plenty Of Colours"*, *"Build your rotation one colour at a time"*
 - **Clickbait Prize Tasks (*YouTube*):** *"Complete 1-Min Task & Win ₹1 CRORE 💰"*
-- **Critical Safety Guardrails:** OTP / 2FA codes, bank credits/debits, and food/courier tracking (Zomato, Swiggy, Uber, Bluedart) are strictly exempt and never touched.
+- **Critical Safety Guardrails:** OTP / 2FA codes, bank credits/debits, and food/courier tracking are strictly exempt and never touched.
 
-### 🔤 2. Unicode Font De-obfuscation
+### 🔤 5. Unicode Font De-obfuscation
 - Modern notification spammers use stylized mathematical bold, italic, script, and fullwidth Unicode fonts (e.g. `𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸` or `𝓯𝓻𝓮𝓮`) or invisible zero-width characters to bypass plain-text keyword filters.
 - Sieve's classifier automatically executes **Unicode NFKD (Compatibility Decomposition)** to normalize all stylized symbols into standard ASCII base characters and strip zero-width spaces before rule matching.
 
-### 🧹 3. Active Status Bar Sweeper
+### 🧹 6. Active Status Bar Sweeper
 - Standard notification listeners only intercept *new* incoming notifications, leaving existing spam sitting in the notification shade.
 - Sieve features an automatic **Active Status Bar Sweeper** that inspects all currently active notifications when the app is launched or resumed, retroactively clearing out sitting spam.
 

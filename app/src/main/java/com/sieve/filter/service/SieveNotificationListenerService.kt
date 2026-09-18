@@ -120,14 +120,44 @@ class SieveNotificationListenerService : NotificationListenerService() {
 
         val notification = sbn.notification ?: return
 
-        // 1. Guard: Sticky, ongoing, media player, navigation, and foreground services are NEVER touched
-        val isOngoing = (notification.flags and Notification.FLAG_ONGOING_EVENT) != 0 ||
-                        (notification.flags and Notification.FLAG_NO_CLEAR) != 0 ||
-                        (notification.flags and Notification.FLAG_FOREGROUND_SERVICE) != 0 ||
-                        sbn.isOngoing
+        val category = notification.category
+        val isCommunicationApp = PROTECTED_COMMUNICATION_PACKAGES.contains(packageName.lowercase(Locale.ROOT))
+        val isProtectedCategory = category != null && PROTECTED_NOTIFICATION_CATEGORIES.contains(category)
 
-        if (isOngoing) {
-            Log.d(TAG, "✅ [ALLOWED - ONGOING/SERVICE] pkg=$packageName | Sticky or foreground service protected")
+        // System packages are always protected from dismissal
+        val isSystemPackage = packageName == "android" ||
+                              packageName == "com.android.systemui" ||
+                              packageName.startsWith("com.google.android.packageinstaller") ||
+                              packageName.startsWith("com.android.server")
+
+        // Active download / file transfer / progress check
+        val hasActiveProgress = notification.extras?.let {
+            val max = it.getInt(Notification.EXTRA_PROGRESS_MAX, 0)
+            val current = it.getInt(Notification.EXTRA_PROGRESS, 0)
+            val indeterminate = it.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE, false)
+            indeterminate || (max > 0 && current < max)
+        } ?: false
+
+        // A notification is considered genuinely ongoing / protected ONLY IF:
+        // - It is an ongoing call, navigation, or transport/media player
+        // - It is a system package
+        // - It has an active progress bar
+        // - It is a communication app with foreground service / ongoing flag (e.g. Truecaller active caller ID)
+        val isGenuineOngoing = (
+            isSystemPackage ||
+            isProtectedCategory ||
+            hasActiveProgress ||
+            (isCommunicationApp && ((notification.flags and Notification.FLAG_FOREGROUND_SERVICE) != 0 || (notification.flags and Notification.FLAG_NO_CLEAR) != 0)) ||
+            (category == Notification.CATEGORY_CALL || category == Notification.CATEGORY_NAVIGATION || category == Notification.CATEGORY_TRANSPORT)
+        ) && (
+            (notification.flags and Notification.FLAG_ONGOING_EVENT) != 0 ||
+            (notification.flags and Notification.FLAG_NO_CLEAR) != 0 ||
+            (notification.flags and Notification.FLAG_FOREGROUND_SERVICE) != 0 ||
+            sbn.isOngoing
+        )
+
+        if (isGenuineOngoing) {
+            Log.d(TAG, "✅ [ALLOWED - ONGOING/SERVICE] pkg=$packageName | Genuine ongoing/service protected")
             return
         }
 
@@ -145,24 +175,41 @@ class SieveNotificationListenerService : NotificationListenerService() {
 
         val extras = notification.extras
 
-        // Extract metadata
-        val title = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString()
-        val rawText = extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString()
-        val bigText = extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
-        val subText = extras?.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()
-
-        val text = if (!bigText.isNullOrBlank() && bigText != rawText) {
-            if (rawText.isNullOrBlank()) bigText else "$rawText $bigText"
-        } else {
-            rawText ?: bigText
+        // Deep Multi-Layer Text Extraction
+        // Extract Title (handling EXTRA_TITLE and EXTRA_TITLE_BIG)
+        val rawTitle = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim()
+        val bigTitle = extras?.getCharSequence(Notification.EXTRA_TITLE_BIG)?.toString()?.trim()
+        val title = when {
+            !bigTitle.isNullOrBlank() && !rawTitle.isNullOrBlank() && bigTitle != rawTitle -> "$rawTitle - $bigTitle"
+            !rawTitle.isNullOrBlank() -> rawTitle
+            !bigTitle.isNullOrBlank() -> bigTitle
+            else -> null
         }
+
+        // Extract Body Text (handling EXTRA_TEXT, EXTRA_BIG_TEXT, and EXTRA_TEXT_LINES for InboxStyle)
+        val rawText = extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.trim()
+        val bigText = extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()?.trim()
+        val subText = extras?.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()?.trim()
+        val summaryText = extras?.getCharSequence(Notification.EXTRA_SUMMARY_TEXT)?.toString()?.trim()
+        val infoText = extras?.getCharSequence(Notification.EXTRA_INFO_TEXT)?.toString()?.trim()
+
+        // Extract InboxStyle text lines (e.g. promo deals listed by shopping/news apps)
+        val textLines = extras?.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
+            ?.mapNotNull { it?.toString()?.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.joinToString(" ")
+
+        val textParts = mutableListOf<String>()
+        if (!rawText.isNullOrBlank()) textParts.add(rawText)
+        if (!bigText.isNullOrBlank() && bigText != rawText) textParts.add(bigText)
+        if (!textLines.isNullOrBlank() && textLines != rawText && textLines != bigText) textParts.add(textLines)
+        if (!summaryText.isNullOrBlank() && summaryText != rawText && summaryText != subText) textParts.add(summaryText)
+        if (!infoText.isNullOrBlank()) textParts.add(infoText)
+
+        val text = if (textParts.isNotEmpty()) textParts.joinToString(" ") else null
 
         val actionTitles = notification.actions?.mapNotNull { it.title?.toString() } ?: emptyList()
         val channelId = notification.channelId
-
-        val category = notification.category
-        val isCommunicationApp = PROTECTED_COMMUNICATION_PACKAGES.contains(packageName.lowercase(Locale.ROOT))
-        val isProtectedCategory = category != null && PROTECTED_NOTIFICATION_CATEGORIES.contains(category)
 
         // 3. Fast Exit if App is set to Always Block
         if (appMode == AppRuleMode.BLOCK) {
@@ -202,7 +249,7 @@ class SieveNotificationListenerService : NotificationListenerService() {
             subText = subText,
             channelId = channelId,
             channelName = channelName,
-            isOngoing = isOngoing,
+            isOngoing = isGenuineOngoing,
             actions = actionTitles
         )
 
@@ -229,7 +276,7 @@ class SieveNotificationListenerService : NotificationListenerService() {
             return
         } else if (decision.isPassThrough && prefs.isAiFilterEnabled.value) {
             // 6. On-Device AI Classification for notifications not matched by predefined keywords
-            val aiResult = SmartAiClassifier.classify(payload)
+            val aiResult = SmartAiClassifier.classify(payload, prefs.isCommercialShieldEnabled.value)
             if (aiResult.isSpam) {
                 cancelNotification(sbn.key)
 

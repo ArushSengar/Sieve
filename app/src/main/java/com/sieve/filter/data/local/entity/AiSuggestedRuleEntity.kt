@@ -32,5 +32,9 @@ data class AiSuggestedRuleEntity(
         const val CAT_CATALOG_PROMO = "Catalog Promo"
         const val CAT_CLICKBAIT = "Clickbait"
         const val CAT_GENERIC_MARKETING = "Marketing"
+        const val CAT_COMMERCIAL_PROMO = "Commercial Promo"
+        const val CAT_GAMIFICATION = "Gamification"
+        const val CAT_REFERRAL = "Referral Bait"
+        const val CAT_LOYALTY_FREEBIE = "Loyalty Bait"
     }
 }

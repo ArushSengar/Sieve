@@ -156,6 +156,32 @@ class SieveRepository(
         keywordRuleDao.insertAll(rules)
     }
 
+    /**
+     * Idempotently synchronizes upgraded default keywords into an existing database installation
+     * without deleting custom user rules.
+     */
+    suspend fun syncUpgradedDefaultRules() = withContext(Dispatchers.IO) {
+        val existingRules = keywordRuleDao.getAllRulesSync()
+        val existingGlobalPatterns = existingRules.filter { it.isGlobal }.map { it.pattern.lowercase() }.toSet()
+
+        val newRules = mutableListOf<KeywordRuleEntity>()
+        SieveDatabase.DEFAULT_BLOCK_KEYWORDS.forEach { pattern ->
+            if (!existingGlobalPatterns.contains(pattern.lowercase())) {
+                newRules.add(KeywordRuleEntity(packageName = null, pattern = pattern, action = RuleAction.BLOCK.name))
+            }
+        }
+        SieveDatabase.DEFAULT_ALLOW_KEYWORDS.forEach { pattern ->
+            if (!existingGlobalPatterns.contains(pattern.lowercase())) {
+                newRules.add(KeywordRuleEntity(packageName = null, pattern = pattern, action = RuleAction.ALLOW.name))
+            }
+        }
+        if (newRules.isNotEmpty()) {
+            keywordRuleDao.insertAll(newRules)
+            NotificationClassifier.clearRegexCache()
+            keywordRulesCache.clear()
+        }
+    }
+
     // ---------------- BLOCK LOGS ----------------
 
     fun getAllBlockLogs(): Flow<List<BlockLogEntity>> = blockLogDao.getAllLogs()

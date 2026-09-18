@@ -180,4 +180,102 @@ class SmartAiClassifierTest {
         val normalized = SmartAiClassifier.normalizeSpamText(stylized)
         assertTrue("Stylized bold math font must be normalized to standard ASCII", normalized.contains("cashback"))
     }
+
+    @Test
+    fun testJarStickyCashbackBait_DetectedAsFinancialBait() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.jar.app",
+            title = "Arush Sengar, CASHBACK OFFER",
+            text = "Win Cashback up to ₹5,000 on your daily savings! Tap to claim."
+        )
+
+        val result = SmartAiClassifier.classify(payload)
+
+        assertTrue("Jar sticky cashback marketing must be caught as spam", result.isSpam)
+        assertTrue(result.category == AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT || result.category == AiSuggestedRuleEntity.CAT_CLICKBAIT)
+        assertTrue(result.primaryKeyword.isNotEmpty())
+    }
+
+    @Test
+    fun testNaviReferralBounty_DetectedAsReferral() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.naviapp",
+            title = "Refer & Earn Rs. 30",
+            text = "Refer a friend, get Rs. 30 each for your next buy. Invite now!"
+        )
+
+        val result = SmartAiClassifier.classify(payload)
+
+        assertTrue("Navi referral bribe must be detected as spam", result.isSpam)
+        assertEquals(AiSuggestedRuleEntity.CAT_REFERRAL, result.category)
+    }
+
+    @Test
+    fun testDominosFreePizzaLoyalty_DetectedAsLoyaltyFreebie() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.dominant.dominos",
+            title = "Fan of Free Pizzas?",
+            text = "Your Cheesy Rewards Journey has started. Collect points for free pizza!"
+        )
+
+        val result = SmartAiClassifier.classify(payload)
+
+        assertTrue("Domino's free pizza loyalty bait must be detected as spam", result.isSpam)
+        assertEquals(AiSuggestedRuleEntity.CAT_LOYALTY_FREEBIE, result.category)
+    }
+
+    @Test
+    fun testFlipkartCoolestDeals_BlockedByCommercialShieldOrPromo() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.flipkart.android",
+            title = "Grab the coolest deals now!",
+            text = "Electronics up to 70% off. Limited time flash sale."
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertTrue("Flipkart deal broadcast must be intercepted", result.isSpam)
+        assertTrue(result.category == AiSuggestedRuleEntity.CAT_COMMERCIAL_PROMO || result.category == AiSuggestedRuleEntity.CAT_CATALOG_PROMO)
+    }
+
+    @Test
+    fun testLinkedInDailyPuzzle_DetectedAsGamification() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.linkedin.android",
+            title = "Zip #550: How will you play?",
+            text = "A new puzzle is ready. Beat your daily record!"
+        )
+
+        val result = SmartAiClassifier.classify(payload)
+
+        assertTrue("LinkedIn daily game/puzzle retention ping must be detected as spam", result.isSpam)
+        assertEquals(AiSuggestedRuleEntity.CAT_GAMIFICATION, result.category)
+    }
+
+    @Test
+    fun testFlipkartGenuineOrderDelivered_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.flipkart.android",
+            title = "Flipkart: Order Delivered",
+            text = "Your order OD9281726312 containing Wireless Headphones has been delivered. Thank you for shopping!"
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertFalse("Genuine e-commerce delivered alerts must NEVER be flagged as spam", result.isSpam)
+    }
+
+    @Test
+    fun testDominosPizzaOutForDelivery_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.dominant.dominos",
+            title = "Domino's: Order Confirmed & Baking",
+            text = "Your Margherita pizza is baking in the oven. Rider will be out for delivery shortly."
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertFalse("Genuine food order cooking / out for delivery notifications must NEVER be flagged as spam", result.isSpam)
+    }
 }
+

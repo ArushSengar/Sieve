@@ -35,6 +35,7 @@ object SmartAiClassifier {
 
     // Guaranteed Non-Spam / Safe Patterns
     private val SAFE_PATTERNS = listOf(
+        // Authentication & Security
         "otp",
         "verification code",
         "security code",
@@ -43,6 +44,10 @@ object SmartAiClassifier {
         "auth code",
         "is your secret code",
         "do not share this otp",
+        "login approved",
+        "device verification",
+
+        // Banking & Financial Transactions
         "debited",
         "credited",
         "bank transfer",
@@ -52,18 +57,87 @@ object SmartAiClassifier {
         "txn id",
         "transaction successful",
         "upi transaction",
+
+        // E-Commerce & Food Delivery Tracking
         "out for delivery",
         "order confirmed",
+        "order placed",
+        "order prepared",
+        "order is ready",
+        "order update",
+        "order status",
+        "order #",
+        "order no",
+        "delivery update",
         "arriving today",
+        "arriving now",
+        "arriving in",
+        "on the way",
+        "on its way",
+        "picked up",
+        "dispatched",
+        "in transit",
+        "package is out",
+        "delivery partner",
         "driver arriving",
         "driver has arrived",
+        "rider arriving",
+        "rider has arrived",
         "pickup code",
         "tracking id",
+        "tracking number",
+        "scheduled for delivery",
+        "estimated delivery",
+        "preparing your order",
+        "cooking your",
+        "in the oven",
+        "packed and ready",
+        "courier has picked up",
+        "shipment has arrived",
+        "refund initiated",
+        "refund processed",
+        "refund successful",
+        "return pickup",
+        "return processed",
+        "delivered",
+        "successfully delivered",
+
+        // Calls & Direct Communication
         "missed call",
         "incoming call",
         "sent a photo",
         "sent a video",
         "sent a voice message"
+    )
+
+    // Known Commercial E-Commerce, Food Delivery & Fintech marketing packages
+    val COMMERCIAL_PACKAGES = setOf(
+        "com.flipkart.android",
+        "com.dominos",
+        "com.amazon.mshop.android.shopping",
+        "com.myntra.android",
+        "com.grofers.customerapp", // Blinkit
+        "in.swiggy.android",
+        "com.application.zomato",
+        "com.meesho.supply",
+        "com.nykaa.buyer",
+        "com.tatadigital.tcp",
+        "com.bewakoof.bewakoof",
+        "com.discoverpilgrim",
+        "com.jar.app",
+        "com.naviapp",
+        "com.zeptonow",
+        "com.dunzo.user",
+        "com.bigbasket.mobileapp",
+        "com.relianceretail.ajio",
+        "com.snapdeal.main",
+        "com.lenskart.app",
+        "com.purplle",
+        "com.urbancompany",
+        "com.makemytrip",
+        "com.goibibo",
+        "com.easemytrip.android",
+        "com.cleartrip.android"
     )
 
     // 1. Financial, Giveaway & Credit/Loan Bait Patterns
@@ -211,6 +285,78 @@ object SmartAiClassifier {
         Pair("hurry! only", "Hurry! Urgency Bait")
     )
 
+    // 5. Deals, Price Drops & Loot Promotions
+    private val DEAL_PROMO_TRIGGERS = listOf(
+        Pair("coolest deals", "Coolest Deals"),
+        Pair("coolest deal", "Coolest Deals"),
+        Pair("deals now", "Deals Now"),
+        Pair("deal now", "Deal Now"),
+        Pair("grab the deal", "Grab The Deal"),
+        Pair("grab the coolest", "Coolest Deals"),
+        Pair("grab deals", "Grab Deals"),
+        Pair("loot deal", "Loot Deal"),
+        Pair("loot deals", "Loot Deals"),
+        Pair("mega deal", "Mega Deal"),
+        Pair("steal deal", "Steal Deal"),
+        Pair("best deals", "Best Deals"),
+        Pair("hot deals", "Hot Deals"),
+        Pair("lightning deal", "Lightning Deal"),
+        Pair("deal of the day", "Deal Of The Day"),
+        Pair("deals of the day", "Deals Of The Day"),
+        Pair("exclusive deal", "Exclusive Deal"),
+        Pair("top deals", "Top Deals"),
+        Pair("huge deals", "Huge Deals"),
+        Pair("crazy deals", "Crazy Deals"),
+        Pair("price drop", "Price Drop"),
+        Pair("price dropped", "Price Drop"),
+        Pair("prices slashed", "Prices Slashed"),
+        Pair("lowest price", "Lowest Price"),
+        Pair("clearance sale", "Clearance Sale"),
+        Pair("markdown", "Markdown Sale"),
+        Pair("flash offer", "Flash Offer")
+    )
+
+    // 6. Referral, Invites & Viral Bounty
+    private val REFERRAL_TRIGGERS = listOf(
+        Pair("refer a friend", "Refer A Friend"),
+        Pair("refer and earn", "Refer & Earn"),
+        Pair("refer & earn", "Refer & Earn"),
+        Pair("refer your friends", "Refer Friends"),
+        Pair("invite friends", "Invite Friends"),
+        Pair("invite contacts", "Invite Contacts"),
+        Pair("referral bonus", "Referral Bonus"),
+        Pair("referral code", "Referral Code"),
+        Pair("share and earn", "Share & Earn"),
+        Pair("share & earn", "Share & Earn"),
+        Pair("for your next buy", "Referral Incentive"),
+        Pair("join using my code", "Referral Code")
+    )
+
+    // 7. Loyalty Rewards & Freebies Bait
+    private val LOYALTY_FREEBIE_TRIGGERS = listOf(
+        Pair("fan of free", "Freebie Bait"),
+        Pair("free pizza", "Free Pizza Bait"),
+        Pair("free burger", "Free Food Bait"),
+        Pair("free meal", "Free Meal Bait"),
+        Pair("free ride", "Free Ride Bait"),
+        Pair("cheesy rewards", "Loyalty Rewards"),
+        Pair("loyalty rewards", "Loyalty Rewards"),
+        Pair("rewards journey", "Rewards Journey"),
+        Pair("reward points expiring", "Points Expiring FOMO"),
+        Pair("coins expiring", "Coins Expiring FOMO"),
+        Pair("claim your coins", "Coins Bait"),
+        Pair("scratch card waiting", "Scratch Card Bait")
+    )
+
+    // 8. Social Network Gamification & Puzzles
+    private val GAMIFICATION_TRIGGERS = listOf(
+        Pair("beat your record", "Beat Record Bait"),
+        Pair("daily puzzle", "Daily Puzzle"),
+        Pair("daily game", "Daily Game"),
+        Pair("solve today's", "Daily Puzzle"),
+        Pair("play today's", "Daily Puzzle")
+    )
+
     /**
      * Normalizes text by decomposing stylized Unicode characters (e.g. bold/italic math fonts
      * used by spammers like '𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸' or '𝓯𝓻𝓮𝓮') into standard ASCII equivalents,
@@ -230,7 +376,10 @@ object SmartAiClassifier {
     /**
      * Classifies a notification payload with AI heuristics.
      */
-    fun classify(payload: NotificationClassifier.NotificationPayload): AiResult {
+    fun classify(
+        payload: NotificationClassifier.NotificationPayload,
+        isCommercialShieldEnabled: Boolean = true
+    ): AiResult {
         // Fast exit: Ongoing notification
         if (payload.isOngoing) {
             return AiResult(isSpam = false, reason = "Ongoing notification protected")
@@ -303,7 +452,63 @@ object SmartAiClassifier {
             }
         }
 
-        // Check 4: Product Catalog Push
+        // Check 4: Deals, Price Drops & Loot Promotions
+        for ((pattern, label) in DEAL_PROMO_TRIGGERS) {
+            if (combinedContent.contains(pattern)) {
+                val extracted = extractRefinedKeyword(title, text, pattern, label)
+                return AiResult(
+                    isSpam = true,
+                    category = AiSuggestedRuleEntity.CAT_CATALOG_PROMO,
+                    primaryKeyword = extracted,
+                    confidence = 0.94f,
+                    reason = "Promotional deal / discount detected: '$extracted'"
+                )
+            }
+        }
+
+        // Check 5: Referral, Invites & Viral Bounty
+        for ((pattern, label) in REFERRAL_TRIGGERS) {
+            if (combinedContent.contains(pattern)) {
+                val extracted = extractRefinedKeyword(title, text, pattern, label)
+                return AiResult(
+                    isSpam = true,
+                    category = AiSuggestedRuleEntity.CAT_REFERRAL,
+                    primaryKeyword = extracted,
+                    confidence = 0.93f,
+                    reason = "Referral / invite marketing bait detected: '$extracted'"
+                )
+            }
+        }
+
+        // Check 6: Loyalty Rewards & Freebie Bait
+        for ((pattern, label) in LOYALTY_FREEBIE_TRIGGERS) {
+            if (combinedContent.contains(pattern)) {
+                val extracted = extractRefinedKeyword(title, text, pattern, label)
+                return AiResult(
+                    isSpam = true,
+                    category = AiSuggestedRuleEntity.CAT_LOYALTY_FREEBIE,
+                    primaryKeyword = extracted,
+                    confidence = 0.92f,
+                    reason = "Freebie / gamified loyalty bait detected: '$extracted'"
+                )
+            }
+        }
+
+        // Check 7: Social Network Gamification & Puzzles
+        for ((pattern, label) in GAMIFICATION_TRIGGERS) {
+            if (combinedContent.contains(pattern)) {
+                val extracted = extractRefinedKeyword(title, text, pattern, label)
+                return AiResult(
+                    isSpam = true,
+                    category = AiSuggestedRuleEntity.CAT_GAMIFICATION,
+                    primaryKeyword = extracted,
+                    confidence = 0.91f,
+                    reason = "Social gamification / puzzle bait detected: '$extracted'"
+                )
+            }
+        }
+
+        // Check 8: Product Catalog Push
         for ((pattern, label) in CATALOG_PROMO_TRIGGERS) {
             if (combinedContent.contains(pattern)) {
                 val extracted = extractRefinedKeyword(title, text, pattern, label)
@@ -317,7 +522,7 @@ object SmartAiClassifier {
             }
         }
 
-        // Check 5: Reward / Currency Claim Regex (e.g. "Claim my Rs. 12.00", "Win ₹500", "Grab Rs 100", "Save ₹ 50")
+        // Check 9: Reward / Currency Claim Regex (e.g. "Claim my Rs. 12.00", "Win ₹500", "Grab Rs 100", "Save ₹ 50")
         val currencyRegex = Regex("(?:claim|get|win|grab|earn|save|add)\\s+(?:my\\s+|your\\s+)?(?:₹|rs\\.?|\\$)\\s*\\d+", RegexOption.IGNORE_CASE)
         val currencyMatch = currencyRegex.find(combinedContent)
         if (currencyMatch != null) {
@@ -331,7 +536,7 @@ object SmartAiClassifier {
             )
         }
 
-        // Check 6: Prize / Gadget Giveaway Regex (e.g. "Win an iPhone 17", "Won a smartphone", "Win a car")
+        // Check 10: Prize / Gadget Giveaway Regex (e.g. "Win an iPhone 17", "Won a smartphone", "Win a car")
         val giveawayRegex = Regex("(?:win|won)\\s+(?:an?|the)?\\s*(?:iphone|phone|smartphone|car|bike|gold|laptop|ipad|macbook|voucher)", RegexOption.IGNORE_CASE)
         val giveawayMatch = giveawayRegex.find(combinedContent)
         if (giveawayMatch != null) {
@@ -342,6 +547,59 @@ object SmartAiClassifier {
                 primaryKeyword = matchedVal,
                 confidence = 0.95f,
                 reason = "Promotional giveaway bait detected: '$matchedVal'"
+            )
+        }
+
+        // Check 11: Puzzle & Casual Game Regex (e.g. "Zip #550", "Pinpoint #12", "Queens #4")
+        val puzzleRegex = Regex("\\b(?:zip|pinpoint|queens|tango|crossclimb|wordle|tumble)\\s*#?\\d+\\b", RegexOption.IGNORE_CASE)
+        val puzzleMatch = puzzleRegex.find(combinedContent)
+        if (puzzleMatch != null) {
+            val matchedVal = puzzleMatch.value.trim()
+            return AiResult(
+                isSpam = true,
+                category = AiSuggestedRuleEntity.CAT_GAMIFICATION,
+                primaryKeyword = matchedVal,
+                confidence = 0.92f,
+                reason = "Social puzzle / game engagement push: '$matchedVal'"
+            )
+        }
+
+        // Check 12: Deals & Urgency Regex (e.g. "deals now", "coolest deals", "45% off")
+        val percentOffRegex = Regex("(?:min\\.?\\s*)?\\d{1,2}%\\s*off", RegexOption.IGNORE_CASE)
+        val percentMatch = percentOffRegex.find(combinedContent)
+        if (percentMatch != null) {
+            val matchedVal = percentMatch.value.trim()
+            return AiResult(
+                isSpam = true,
+                category = AiSuggestedRuleEntity.CAT_CATALOG_PROMO,
+                primaryKeyword = matchedVal,
+                confidence = 0.94f,
+                reason = "Discount percentage promo detected: '$matchedVal'"
+            )
+        }
+
+        val dealRegex = Regex("\\b(?:deals?|discounts?|offers?)\\b.*\\b(?:now|today|live|ends?|hurry|grab|coolest|hottest)\\b", RegexOption.IGNORE_CASE)
+        val dealMatch = dealRegex.find(combinedContent)
+        if (dealMatch != null) {
+            val matchedVal = dealMatch.value.trim()
+            return AiResult(
+                isSpam = true,
+                category = AiSuggestedRuleEntity.CAT_CATALOG_PROMO,
+                primaryKeyword = matchedVal,
+                confidence = 0.93f,
+                reason = "Flash deal / offer announcement: '$matchedVal'"
+            )
+        }
+
+        // Check 13: Smart E-Commerce Shield
+        // For shopping & food apps, non-transactional broadcasts without order/delivery signals are spam
+        if (isCommercialShieldEnabled && COMMERCIAL_PACKAGES.contains(payload.packageName.lowercase(Locale.ROOT))) {
+            return AiResult(
+                isSpam = true,
+                category = AiSuggestedRuleEntity.CAT_COMMERCIAL_PROMO,
+                primaryKeyword = "Commercial Broadcast",
+                confidence = 0.96f,
+                reason = "Non-transactional commercial marketing broadcast from shopping/food app"
             )
         }
 

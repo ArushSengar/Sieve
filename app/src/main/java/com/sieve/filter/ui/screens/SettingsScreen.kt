@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -82,6 +83,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sieve.filter.ui.theme.AiPurple
 import com.sieve.filter.ui.theme.AiPurpleBg
 import com.sieve.filter.ui.theme.AllowGreen
+import com.sieve.filter.ui.theme.AllowGreenBg
 import com.sieve.filter.ui.theme.BlockRed
 import com.sieve.filter.ui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
@@ -98,6 +100,7 @@ fun SettingsScreen(
 
     val isFilterEnabled by viewModel.isFilterEnabled.collectAsState()
     val isAiFilterEnabled by viewModel.isAiFilterEnabled.collectAsState()
+    val isCommercialShieldEnabled by viewModel.isCommercialShieldEnabled.collectAsState()
     val isQuietHoursEnabled by viewModel.isQuietHoursEnabled.collectAsState()
     val isDeduplicationEnabled by viewModel.isDeduplicationEnabled.collectAsState()
     val logRetentionDays by viewModel.logRetentionDays.collectAsState()
@@ -289,6 +292,90 @@ fun SettingsScreen(
                     Switch(
                         checked = isAiFilterEnabled,
                         onCheckedChange = viewModel::setAiFilterEnabled
+                    )
+                }
+            }
+        }
+
+        // Section: Smart E-Commerce & Food Shield
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isCommercialShieldEnabled) {
+                        AllowGreenBg
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    }
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isCommercialShieldEnabled) AllowGreen.copy(alpha = 0.2f)
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ShoppingCart,
+                                contentDescription = null,
+                                tint = if (isCommercialShieldEnabled) AllowGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Smart E-Commerce Shield",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = AllowGreen
+                            ) {
+                                Text(
+                                    text = "ORDER UPDATES ONLY",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    softWrap = false,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isCommercialShieldEnabled)
+                                    "Silences marketing broadcasts from Flipkart, Domino's, Myntra, Swiggy, etc. Delivery, tracking & OTPs always pass through"
+                                else
+                                    "Disabled — shopping apps evaluated by standard keywords only",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = isCommercialShieldEnabled,
+                        onCheckedChange = viewModel::setCommercialShieldEnabled
                     )
                 }
             }

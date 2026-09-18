@@ -46,6 +46,8 @@ class SieveApplication : Application() {
                 if (retentionDays > 0) {
                     repository.pruneOldLogs(retentionDays)
                 }
+                // Automatically ensure upgraded default rules are seeded into existing installs
+                repository.syncUpgradedDefaultRules()
             } catch (_: Exception) {}
         }
     }

@@ -33,6 +33,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     val isFilterEnabled: StateFlow<Boolean> = prefs.isFilterEnabled
     val isAiFilterEnabled: StateFlow<Boolean> = prefs.isAiFilterEnabled
+    val isCommercialShieldEnabled: StateFlow<Boolean> = prefs.isCommercialShieldEnabled
     val isQuietHoursEnabled: StateFlow<Boolean> = prefs.isQuietHoursEnabled
     val isDeduplicationEnabled: StateFlow<Boolean> = prefs.isDeduplicationEnabled
     val logRetentionDays: StateFlow<Int> = prefs.logRetentionDays
@@ -77,6 +78,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setAiFilterEnabled(enabled: Boolean) {
         prefs.setAiFilterEnabled(enabled)
+    }
+
+    fun setCommercialShieldEnabled(enabled: Boolean) {
+        prefs.setCommercialShieldEnabled(enabled)
     }
 
     fun setQuietHoursEnabled(enabled: Boolean) {

@@ -145,7 +145,6 @@ class SieveNotificationListenerService : NotificationListenerService() {
         // - It is a communication app with foreground service / ongoing flag (e.g. Truecaller active caller ID)
         val isGenuineOngoing = (
             isSystemPackage ||
-            isProtectedCategory ||
             hasActiveProgress ||
             (isCommunicationApp && ((notification.flags and Notification.FLAG_FOREGROUND_SERVICE) != 0 || (notification.flags and Notification.FLAG_NO_CLEAR) != 0)) ||
             (category == Notification.CATEGORY_CALL || category == Notification.CATEGORY_NAVIGATION || category == Notification.CATEGORY_TRANSPORT)

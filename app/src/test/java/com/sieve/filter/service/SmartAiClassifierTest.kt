@@ -304,5 +304,88 @@ class SmartAiClassifierTest {
 
         assertFalse("Genuine Blinkit order completed notification must NEVER be blocked", result.isSpam)
     }
+
+    @Test
+    fun testCurieFintechBait_DetectedAsFinancialBait() {
+        // Real case from user's phone notification history
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.yield.curie_money",
+            title = "Your UPI has a side hustle 💼",
+            text = "It earns between payments. Use Curie for tonight's dinner."
+        )
+
+        val result = SmartAiClassifier.classify(payload)
+
+        assertTrue("Curie side hustle marketing must be flagged as spam", result.isSpam)
+        assertEquals(AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT, result.category)
+    }
+
+    @Test
+    fun testJarDigitalGoldBait_DetectedAsFinancialBait() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.jar.app",
+            title = "Gold Price Dropped! 📉",
+            text = "Buy 24K Digital Gold in your Apna Gullak today and save in gold."
+        )
+
+        val result = SmartAiClassifier.classify(payload)
+
+        assertTrue("Jar digital gold / gullak bait must be flagged as spam", result.isSpam)
+        assertEquals(AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT, result.category)
+    }
+
+    @Test
+    fun testSave8DailySavings_DetectedAsFinancialBait() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.thousandx.save8",
+            title = "Daily savings reminder 🪙",
+            text = "Save ₹50 today to grow your money with Save8."
+        )
+
+        val result = SmartAiClassifier.classify(payload)
+
+        assertTrue("Save8 daily savings promo must be flagged as spam", result.isSpam)
+        assertEquals(AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT, result.category)
+    }
+
+    @Test
+    fun testRapidoRidePromo_BlockedByCommercialShield() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.rapido.passenger",
+            title = "50% off on your next Auto ride! 🛺",
+            text = "Beat traffic at the lowest price. Book now."
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertTrue("Rapido promotional discount must be blocked", result.isSpam)
+    }
+
+    @Test
+    fun testRapidoLiveRideUpdate_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.rapido.passenger",
+            title = "Captain assigned!",
+            text = "Captain is on the way. Start PIN for your ride is 8192."
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertFalse("Live ride status and start PIN must NEVER be blocked", result.isSpam)
+    }
+
+    @Test
+    fun testCarInfoInsurancePromo_DetectedAsSpam() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.cuvora.carinfo",
+            title = "Car insurance expiring soon!",
+            text = "Renew now and get instant discounts on policy."
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertTrue("CarInfo insurance promo must be flagged as spam", result.isSpam)
+    }
 }
+
 

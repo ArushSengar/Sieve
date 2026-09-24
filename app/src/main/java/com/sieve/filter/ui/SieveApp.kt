@@ -53,6 +53,7 @@ import com.sieve.filter.ui.screens.SettingsScreen
 import com.sieve.filter.ui.screens.StatsScreen
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.sp
@@ -104,6 +105,7 @@ fun SieveApp() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(AppleBackground)
+                    .statusBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 // Apple-style date caption

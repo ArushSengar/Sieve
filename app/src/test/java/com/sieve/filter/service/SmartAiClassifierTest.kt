@@ -128,6 +128,20 @@ class SmartAiClassifierTest {
     }
 
     @Test
+    fun testGPayPeerToPeerPayment_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.google.android.apps.nbu.paisa.user",
+            title = "NAVEEN KUMAR paid you ₹501.00",
+            text = "na",
+            channelId = "default"
+        )
+
+        val result = SmartAiClassifier.classify(payload)
+
+        assertFalse("Real GPay peer-to-peer payment transfers must NEVER be flagged as spam", result.isSpam)
+    }
+
+    @Test
     fun testCurrencyBaitHeuristic_CatchesGenericWinMoney() {
         val payload = NotificationClassifier.NotificationPayload(
             packageName = "com.win.cash",

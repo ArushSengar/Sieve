@@ -537,25 +537,29 @@ fun CupertinoBlockLogItemCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 // Rule Badge
-                if (isAiBlocked) {
-                    CupertinoBadge(
-                        text = item.entity.matchedRule,
-                        color = ApplePurple,
-                        icon = Icons.Default.AutoAwesome
-                    )
-                } else if (isKeywordBlocked) {
-                    CupertinoBadge(
-                        text = item.entity.matchedRule,
-                        color = AppleRed,
-                        icon = Icons.Default.Block
-                    )
-                } else {
-                    CupertinoBadge(
-                        text = item.entity.matchedRule,
-                        color = AppleOrange,
-                        icon = Icons.Default.Shield
-                    )
+                Box(modifier = Modifier.weight(1f, fill = false)) {
+                    if (isAiBlocked) {
+                        CupertinoBadge(
+                            text = item.entity.matchedRule,
+                            color = ApplePurple,
+                            icon = Icons.Default.AutoAwesome
+                        )
+                    } else if (isKeywordBlocked) {
+                        CupertinoBadge(
+                            text = item.entity.matchedRule,
+                            color = AppleRed,
+                            icon = Icons.Default.Block
+                        )
+                    } else {
+                        CupertinoBadge(
+                            text = item.entity.matchedRule,
+                            color = AppleOrange,
+                            icon = Icons.Default.Shield
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 // Action Pills
                 Row(
@@ -574,7 +578,8 @@ fun CupertinoBlockLogItemCard(
                                 text = "Verify Rule",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
-                                color = ApplePurple
+                                color = ApplePurple,
+                                softWrap = false
                             )
                         }
                     }
@@ -590,7 +595,8 @@ fun CupertinoBlockLogItemCard(
                             text = "Always Allow",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = AppleGreen
+                            color = AppleGreen,
+                            softWrap = false
                         )
                     }
                 }

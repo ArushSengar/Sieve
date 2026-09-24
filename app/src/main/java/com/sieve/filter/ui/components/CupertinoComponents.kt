@@ -452,7 +452,10 @@ fun CupertinoBadge(
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
             color = color,
-            letterSpacing = 0.2.sp
+            letterSpacing = 0.2.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            softWrap = false
         )
     }
 }

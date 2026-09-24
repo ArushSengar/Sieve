@@ -60,11 +60,31 @@ object SmartAiClassifier {
         "paid to",
         "paid ₹",
         "paid rs",
+        "paid you",
+        "paid you ₹",
+        "paid you rs",
+        "sent you",
+        "sent you ₹",
+        "sent you rs",
+        "transferred to your",
+        "transferred to you",
+        "transferred ₹",
+        "transferred rs",
+        "has sent you",
+        "payment received",
+        "money received",
+        "credited to your",
+        "credited your",
+        "debited from your",
         "received from",
         "received ₹",
         "received rs",
+        "received payment",
+        "₹ paid",
+        "rs paid",
+        "bhim upi",
+        "upi payment",
         "money sent",
-        "money received",
         "payment successful",
         "payment of ₹",
         "payment of rs",
@@ -180,9 +200,6 @@ object SmartAiClassifier {
         "com.techburner.aboutmoney",
         "billhub.app",
         "money.super.payments",
-        "net.one97.paytm",
-        "com.phonepe.app",
-        "com.google.android.apps.nbu.paisa.user",
         "com.cuvora.carinfo",
         "com.jio.myjio",
         "com.rapido.passenger",
@@ -550,6 +567,12 @@ object SmartAiClassifier {
             if (combinedContent.contains(safe)) {
                 return AiResult(isSpam = false, reason = "Matched safety guard '$safe'")
             }
+        }
+
+        // Robust regex check for peer-to-peer / merchant transactional payments (e.g. "NAVEEN KUMAR paid you ₹501.00")
+        val upiPaymentRegex = Regex("(?:paid|sent|transferred|credited|received)\\s+(?:you\\s+)?(?:[₹rs]\\.?\\s*\\d+|\\d+\\s*[₹rs])", RegexOption.IGNORE_CASE)
+        if (upiPaymentRegex.containsMatchIn(rawCombined)) {
+            return AiResult(isSpam = false, reason = "Legitimate financial payment transaction detected")
         }
 
         // Check 1: Clickbait / Lottery Bait (prioritized to catch task-based clickbait before raw currency triggers)

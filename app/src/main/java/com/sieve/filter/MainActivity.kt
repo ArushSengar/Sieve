@@ -30,6 +30,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (SieveNotificationListenerService.isPermissionGranted(this)) {
+            SieveNotificationListenerService.tryRebind(this)
+        }
         SieveNotificationListenerService.sweepActiveNotificationsInstance()
     }
 

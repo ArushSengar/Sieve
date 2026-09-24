@@ -47,18 +47,14 @@ import com.sieve.filter.ui.theme.AppleCard
 import com.sieve.filter.ui.theme.AppleHairline
 import com.sieve.filter.ui.theme.AppleOrange
 import com.sieve.filter.ui.theme.AppleTextPrimary
+import com.sieve.filter.service.SieveNotificationListenerService
 import com.sieve.filter.ui.theme.AppleTextSecondary
 
 /**
  * Checks if the NotificationListenerService permission is granted.
  */
 fun isNotificationServiceEnabled(context: Context): Boolean {
-    val packageName = context.packageName
-    val flat = Settings.Secure.getString(
-        context.contentResolver,
-        "enabled_notification_listeners"
-    ) ?: return false
-    return flat.contains(packageName)
+    return SieveNotificationListenerService.isPermissionGranted(context)
 }
 
 /**

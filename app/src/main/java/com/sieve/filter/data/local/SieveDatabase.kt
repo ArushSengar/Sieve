@@ -119,7 +119,19 @@ abstract class SieveDatabase : RoomDatabase() {
             "earn interest",
             "pre-approved loan",
             "pre-approved credit",
-            "instant loan"
+            "instant loan",
+            "pocket money",
+            "पॉकेट मनी",
+            "कैशबैक",
+            "वाउचर",
+            "रिचार्ज",
+            "बिल पेमेंट",
+            "ऑफर",
+            "छूट",
+            "बचत",
+            "कमाएं",
+            "जीतें",
+            "पाएं"
         )
 
         val DEFAULT_ALLOW_KEYWORDS = listOf(
@@ -147,7 +159,14 @@ abstract class SieveDatabase : RoomDatabase() {
             "dispatched",
             "refund initiated",
             "refund processed",
-            "return pickup"
+            "return pickup",
+            "paid to",
+            "received from",
+            "money sent",
+            "money received",
+            "upi ref",
+            "रुपये भेजे गए",
+            "रुपये प्राप्त हुए"
         )
     }
 

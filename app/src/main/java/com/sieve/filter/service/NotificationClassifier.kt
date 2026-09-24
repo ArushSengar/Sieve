@@ -46,7 +46,14 @@ object NotificationClassifier {
         "announcement",
         "announcements",
         "broadcast",
-        "broadcasts"
+        "broadcasts",
+        "prodfeedback",
+        "feedback",
+        "interest",
+        "crosssell",
+        "survey",
+        "profilingsurvey",
+        "qnasolicit"
     )
 
     private val IMPORTANT_CHANNEL_KEYWORDS = listOf(
@@ -84,7 +91,8 @@ object NotificationClassifier {
         val channelId: String? = null,
         val channelName: String? = null,
         val isOngoing: Boolean = false,
-        val actions: List<String> = emptyList()
+        val actions: List<String> = emptyList(),
+        val hasCustomView: Boolean = false
     )
 
     /**
@@ -118,8 +126,8 @@ object NotificationClassifier {
         val hasSubText = !payload.subText.isNullOrBlank()
         val hasActions = payload.actions.isNotEmpty()
 
-        // Short-circuit: empty notification with no text
-        if (!hasTitle && !hasText && !hasSubText && !hasActions) {
+        // Short-circuit: empty notification with no text AND no custom views
+        if (!hasTitle && !hasText && !hasSubText && !hasActions && !payload.hasCustomView) {
             return FilterDecision.passThrough("Empty notification content")
         }
 

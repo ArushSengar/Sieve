@@ -262,4 +262,24 @@ class NotificationClassifierTest {
 
         assertFalse("Empty notification content should pass through", decision.shouldDismiss)
     }
+
+    @Test
+    fun testCustomView_WithPromotionalChannel_Dismisses() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.flipkart.android",
+            title = null,
+            text = null,
+            channelId = "prodfeedback",
+            hasCustomView = true
+        )
+
+        val decision = NotificationClassifier.classify(
+            payload = payload,
+            appRuleMode = AppRuleMode.AUTO,
+            rules = defaultRules
+        )
+
+        assertTrue("Custom view notification on promotional channel should be dismissed", decision.shouldDismiss)
+        assertTrue("Matched rule should be Channel: prodfeedback", decision.matchedRule.contains("prodfeedback"))
+    }
 }

@@ -47,7 +47,7 @@ object SmartAiClassifier {
         "login approved",
         "device verification",
 
-        // Banking & Financial Transactions
+        // Banking & UPI Financial Transactions
         "debited",
         "credited",
         "bank transfer",
@@ -57,6 +57,35 @@ object SmartAiClassifier {
         "txn id",
         "transaction successful",
         "upi transaction",
+        "paid to",
+        "paid ₹",
+        "paid rs",
+        "received from",
+        "received ₹",
+        "received rs",
+        "money sent",
+        "money received",
+        "payment successful",
+        "payment of ₹",
+        "payment of rs",
+        "upi ref",
+        "upi reference",
+        "sent to",
+        "transfer successful",
+        "debited by",
+        "credited by",
+        "credited with",
+        "linked bank a/c",
+        "a/c linked",
+        "imps ref",
+        "neft ref",
+        "rtgs ref",
+        "रुपये भेजे गए",
+        "रुपये प्राप्त हुए",
+        "खाते से काटे गए",
+        "खाते में जमा",
+        "लेन-देन सफल",
+        "भुगतान सफल",
 
         // E-Commerce & Food Delivery Tracking
         "out for delivery",
@@ -151,6 +180,9 @@ object SmartAiClassifier {
         "com.techburner.aboutmoney",
         "billhub.app",
         "money.super.payments",
+        "net.one97.paytm",
+        "com.phonepe.app",
+        "com.google.android.apps.nbu.paisa.user",
         "com.cuvora.carinfo",
         "com.jio.myjio",
         "com.rapido.passenger",
@@ -221,6 +253,38 @@ object SmartAiClassifier {
         Pair("assured cashback", "Assured Cashback"),
         Pair("flat cashback", "Flat Cashback"),
         Pair("cashback", "Cashback"),
+
+        // Devanagari Hindi / Hinglish Promotional Triggers
+        Pair("कैशबैक", "Cashback (Hindi)"),
+        Pair("वाउचर", "Voucher (Hindi)"),
+        Pair("रिचार्ज", "Recharge Promo (Hindi)"),
+        Pair("बिल पेमेंट", "Bill Payment (Hindi)"),
+        Pair("ऑफर", "Offer (Hindi)"),
+        Pair("छूट", "Discount (Hindi)"),
+        Pair("बचत", "Savings (Hindi)"),
+        Pair("कमाएं", "Earn Bait (Hindi)"),
+        Pair("कमाओ", "Earn Bait (Hindi)"),
+        Pair("कमाए", "Earn Bait (Hindi)"),
+        Pair("जीतें", "Win Bait (Hindi)"),
+        Pair("जीतो", "Win Bait (Hindi)"),
+        Pair("जीते", "Win Bait (Hindi)"),
+        Pair("पाएं", "Reward Bait (Hindi)"),
+        Pair("पाओ", "Reward Bait (Hindi)"),
+        Pair("पाए", "Reward Bait (Hindi)"),
+        Pair("मुफ्त", "Freebie (Hindi)"),
+        Pair("फ्री", "Freebie (Hindi)"),
+        Pair("लोन", "Loan Bait (Hindi)"),
+        Pair("क्रेडिट", "Credit Bait (Hindi)"),
+        Pair("इनाम", "Reward (Hindi)"),
+        Pair("लकी ड्रा", "Lucky Draw (Hindi)"),
+        Pair("स्क्रैच", "Scratch & Win (Hindi)"),
+        Pair("स्पिन", "Spin & Win (Hindi)"),
+        Pair("गुल्लक", "Gullak Micro-savings (Hindi)"),
+        Pair("डिजिटल गोल्ड", "Digital Gold (Hindi)"),
+        Pair("भेजें और पाएं", "Send & Earn Bait (Hindi)"),
+        Pair("ट्रांसफर करें और पाएं", "Transfer & Earn Bait (Hindi)"),
+        Pair("pocket money", "Pocket Money Feature Push"),
+        Pair("पॉकेट मनी", "Pocket Money (Hindi)"),
 
         // Micro-savings, Digital Gold & Gamified Finance
         Pair("side hustle", "Side Hustle"),
@@ -428,8 +492,8 @@ object SmartAiClassifier {
         val stripped = input.replace(Regex("[\u200B-\u200D\uFEFF]"), "")
         // 2. Normalize via NFKD (decomposes mathematical bold, italic, script, fullwidth characters to ASCII)
         val nfkd = Normalizer.normalize(stripped, Normalizer.Form.NFKD)
-        // 3. Strip combining diacritical marks
-        val clean = nfkd.replace(Regex("\\p{M}+"), "")
+        // 3. Strip combining diacritical marks (excluding Indic/Devanagari script matras \u0900-\u0D7F)
+        val clean = nfkd.replace(Regex("[\\p{M}&&[^\\u0900-\\u0D7F]]+"), "")
         return clean.lowercase(Locale.ROOT).trim()
     }
 
@@ -451,6 +515,24 @@ object SmartAiClassifier {
         val actionsCombined = payload.actions.joinToString(" ").trim()
 
         if (title.isEmpty() && text.isEmpty() && actionsCombined.isEmpty()) {
+            if (isCommercialShieldEnabled && payload.packageName in COMMERCIAL_PACKAGES && payload.hasCustomView) {
+                val channel = (payload.channelId ?: "").lowercase(Locale.ROOT)
+                val channelName = (payload.channelName ?: "").lowercase(Locale.ROOT)
+                val isTransactional = channel.contains("order") || channel.contains("delivery") ||
+                    channel.contains("track") || channel.contains("otp") || channel.contains("trans") ||
+                    channel.contains("security") || channel.contains("account") ||
+                    channelName.contains("order") || channelName.contains("delivery")
+
+                if (!isTransactional) {
+                    return AiResult(
+                        isSpam = true,
+                        category = AiSuggestedRuleEntity.CAT_COMMERCIAL_PROMO,
+                        primaryKeyword = "Custom Visual Ad",
+                        confidence = 0.90f,
+                        reason = "Stealth custom image banner without text from commercial app on channel '${payload.channelId}'"
+                    )
+                }
+            }
             return AiResult(isSpam = false, reason = "Empty notification")
         }
 
@@ -582,8 +664,8 @@ object SmartAiClassifier {
             }
         }
 
-        // Check 9: Reward / Currency Claim Regex (e.g. "Claim my Rs. 12.00", "Win ₹500", "Grab Rs 100", "Save ₹ 50")
-        val currencyRegex = Regex("(?:claim|get|win|grab|earn|save|add)\\s+(?:my\\s+|your\\s+)?(?:₹|rs\\.?|\\$)\\s*\\d+", RegexOption.IGNORE_CASE)
+        // Check 9: Reward / Currency Claim Regex (e.g. "Claim my Rs. 12.00", "Win ₹500", "₹30 तक कैशबैक", "₹50 का रिचार्ज")
+        val currencyRegex = Regex("(?:(?:claim|get|win|grab|earn|save|add|पाएं|पाओ|पाए|कमाएं|कमाओ|जीतो|जीतें|भेजें)\\s+(?:my\\s+|your\\s+)?(?:₹|rs\\.?|\\$)\\s*\\d+)|(?:(?:₹|rs\\.?|\\$)\\s*\\d+\\s*(?:तक|का)?\\s*(?:कैशबैक|वाउचर|इनाम|छूट|बोनस|फ्री|off|cashback|voucher))", RegexOption.IGNORE_CASE)
         val currencyMatch = currencyRegex.find(combinedContent)
         if (currencyMatch != null) {
             val matchedVal = currencyMatch.value.trim()

@@ -386,6 +386,92 @@ class SmartAiClassifierTest {
 
         assertTrue("CarInfo insurance promo must be flagged as spam", result.isSpam)
     }
+
+    @Test
+    fun testPaytmHindiCashbackBait_DetectedAsSpam() {
+        // Real case from user's phone notification history
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "net.one97.paytm",
+            title = "सिर्फ ₹10 ट्रांसफर करें 🚀",
+            text = "Paytm UPI से ₹10 भेजें और पाएं ₹30 तक कैशबैक + ₹50 का रिचार्ज और बिल पेमेंट वाउचर 💰"
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertTrue("Paytm Hindi cashback & recharge promo must be flagged as spam", result.isSpam)
+    }
+
+    @Test
+    fun testPaytmPocketMoneyFeaturePush_DetectedAsSpam() {
+        // Real case from user's phone notification history
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "net.one97.paytm",
+            title = "Pocket Money Made Simple 👨‍👩‍👧‍👦",
+            text = "Give your family money digitally with Paytm—even if they don't have a bank account."
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertTrue("Paytm Pocket Money non-transactional promo push must be flagged as spam", result.isSpam)
+    }
+
+    @Test
+    fun testPaytmRealUpiPayment_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "net.one97.paytm",
+            title = "Paid ₹150 to Sharma Groceries",
+            text = "Money transferred successfully via Paytm UPI. UPI Ref: 1234567890."
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertFalse("Real Paytm UPI payment notifications must NEVER be blocked", result.isSpam)
+    }
+
+    @Test
+    fun testHindiBankCreditAlert_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "net.one97.paytm",
+            title = "रुपये प्राप्त हुए",
+            text = "आपके खाते में ₹500 जमा किए गए। लेन-देन सफल।"
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertFalse("Real Hindi transaction alerts must NEVER be blocked", result.isSpam)
+    }
+
+    @Test
+    fun testFlipkartCustomVisualAd_DetectedAsSpam() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.flipkart.android",
+            title = null,
+            text = null,
+            channelId = "prodfeedback",
+            hasCustomView = true
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertTrue("Flipkart stealth visual ad without text must be flagged as spam", result.isSpam)
+        assertEquals("Custom Visual Ad", result.primaryKeyword)
+    }
+
+    @Test
+    fun testFlipkartOrderDeliveryCustomView_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.flipkart.android",
+            title = null,
+            text = null,
+            channelId = "order",
+            channelName = "Communication for your orders",
+            hasCustomView = true
+        )
+
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+
+        assertFalse("Flipkart transactional order notifications must NEVER be blocked", result.isSpam)
+    }
 }
 
 

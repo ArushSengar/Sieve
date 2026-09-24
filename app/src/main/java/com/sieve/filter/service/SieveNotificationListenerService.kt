@@ -10,6 +10,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.text.TextUtils
 import android.util.Log
+import android.widget.RemoteViews
 import com.sieve.filter.SieveApplication
 import com.sieve.filter.model.AppRuleMode
 import java.util.Locale
@@ -178,7 +179,7 @@ class SieveNotificationListenerService : NotificationListenerService() {
         // Extract Title (handling EXTRA_TITLE and EXTRA_TITLE_BIG)
         val rawTitle = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim()
         val bigTitle = extras?.getCharSequence(Notification.EXTRA_TITLE_BIG)?.toString()?.trim()
-        val title = when {
+        var title = when {
             !bigTitle.isNullOrBlank() && !rawTitle.isNullOrBlank() && bigTitle != rawTitle -> "$rawTitle - $bigTitle"
             !rawTitle.isNullOrBlank() -> rawTitle
             !bigTitle.isNullOrBlank() -> bigTitle
@@ -205,14 +206,49 @@ class SieveNotificationListenerService : NotificationListenerService() {
         if (!summaryText.isNullOrBlank() && summaryText != rawText && summaryText != subText) textParts.add(summaryText)
         if (!infoText.isNullOrBlank()) textParts.add(infoText)
 
-        val text = if (textParts.isNotEmpty()) textParts.joinToString(" ") else null
+        var text = if (textParts.isNotEmpty()) textParts.joinToString(" ") else null
+
+        // RemoteViews Text Extraction for custom layout notifications (e.g. Flipkart, shopping flyers)
+        val hasCustomViews = notification.contentView != null ||
+            notification.bigContentView != null ||
+            notification.headsUpContentView != null ||
+            extras?.getBoolean("android.contains.customView") == true
+
+        if ((title.isNullOrBlank() || text.isNullOrBlank()) && hasCustomViews) {
+            val rvTexts = mutableListOf<String>()
+            rvTexts.addAll(extractTextsFromRemoteViews(notification.bigContentView))
+            rvTexts.addAll(extractTextsFromRemoteViews(notification.contentView))
+            rvTexts.addAll(extractTextsFromRemoteViews(notification.headsUpContentView))
+            val distinct = rvTexts.distinct()
+            if (distinct.isNotEmpty()) {
+                if (title.isNullOrBlank()) {
+                    title = distinct.first()
+                    val remaining = distinct.drop(1)
+                    if (text.isNullOrBlank() && remaining.isNotEmpty()) {
+                        text = remaining.joinToString(" ")
+                    }
+                } else if (text.isNullOrBlank()) {
+                    text = distinct.joinToString(" ")
+                } else {
+                    text = "$text " + distinct.joinToString(" ")
+                }
+            }
+        }
+
+        // Ticker Text Fallback
+        val ticker = notification.tickerText?.toString()?.trim()
+        if (title.isNullOrBlank() && !ticker.isNullOrBlank()) {
+            title = ticker
+        } else if (text.isNullOrBlank() && !ticker.isNullOrBlank() && ticker != title) {
+            text = ticker
+        }
 
         val actionTitles = notification.actions?.mapNotNull { it.title?.toString() } ?: emptyList()
         val channelId = notification.channelId
 
         // 3. Fast Exit if App is set to Always Block
         if (appMode == AppRuleMode.BLOCK) {
-            cancelNotification(sbn.key)
+            dismissNotification(sbn)
             repository.logBlockedNotification(
                 packageName = packageName,
                 title = title,
@@ -249,7 +285,8 @@ class SieveNotificationListenerService : NotificationListenerService() {
             channelId = channelId,
             channelName = channelName,
             isOngoing = isGenuineOngoing,
-            actions = actionTitles
+            actions = actionTitles,
+            hasCustomView = hasCustomViews
         )
 
         val decision = NotificationClassifier.classify(
@@ -259,8 +296,8 @@ class SieveNotificationListenerService : NotificationListenerService() {
         )
 
         if (decision.shouldDismiss) {
-            // Cancel notification immediately
-            cancelNotification(sbn.key)
+            // Cancel notification immediately (with ongoing dismissal resilience)
+            dismissNotification(sbn)
 
             // Record in Room SQLite BlockLog
             repository.logBlockedNotification(
@@ -277,7 +314,7 @@ class SieveNotificationListenerService : NotificationListenerService() {
             // 6. On-Device AI Classification for notifications not matched by predefined keywords
             val aiResult = SmartAiClassifier.classify(payload, prefs.isCommercialShieldEnabled.value)
             if (aiResult.isSpam) {
-                cancelNotification(sbn.key)
+                dismissNotification(sbn)
 
                 val aiRuleTag = "AI: ${aiResult.category} (${aiResult.primaryKeyword})"
                 repository.logBlockedNotification(
@@ -322,7 +359,7 @@ class SieveNotificationListenerService : NotificationListenerService() {
             }
 
             if (isDuplicate) {
-                cancelNotification(sbn.key)
+                dismissNotification(sbn)
                 try {
                     repository.logBlockedNotification(
                         packageName = packageName,
@@ -338,6 +375,97 @@ class SieveNotificationListenerService : NotificationListenerService() {
                 return
             }
         }
+    }
+
+    /**
+     * Unified notification dismissal method:
+     * 1. Calls [cancelNotification] for standard clearable notifications.
+     * 2. For persistent/ongoing/non-clearable notifications (FLAG_ONGOING_EVENT or FLAG_NO_CLEAR),
+     *    Android's NotificationManagerService silently rejects cancelNotification().
+     *    To dismiss them:
+     *    - Fires any app-provided dismiss/close/cancel ActionIntent (e.g. Jar's notification_dismissed_action).
+     *    - Calls [snoozeNotification] (API 26+) for 1 year to immediately remove it from the shade.
+     */
+    private fun dismissNotification(sbn: StatusBarNotification) {
+        val key = sbn.key
+        val notification = sbn.notification
+
+        // 1. Standard cancel
+        cancelNotification(key)
+
+        // 2. Ongoing / Non-clearable resilience
+        if (notification != null) {
+            val flags = notification.flags
+            val isOngoingOrNoClear = (flags and Notification.FLAG_ONGOING_EVENT != 0) ||
+                                     (flags and Notification.FLAG_NO_CLEAR != 0) ||
+                                     sbn.isOngoing
+
+            if (isOngoingOrNoClear) {
+                // Trigger app-provided dismiss / close action if present
+                notification.actions?.forEach { action ->
+                    val actionTitle = action.title?.toString()?.lowercase(Locale.ROOT) ?: ""
+                    if (actionTitle.contains("dismiss") || actionTitle.contains("close") || actionTitle.contains("cancel")) {
+                        try {
+                            action.actionIntent?.send()
+                            Log.i(TAG, "Sent app dismiss actionIntent for ${sbn.packageName}")
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Failed sending actionIntent: ${e.message}")
+                        }
+                    }
+                }
+
+                // Snooze notification to force Android framework to remove it from the status bar / shade
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        snoozeNotification(key, 365L * 24 * 60 * 60 * 1000L)
+                        Log.i(TAG, "Snoozed ongoing notification from shade: ${sbn.packageName}")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed snoozing notification: ${e.message}")
+                }
+            }
+        }
+    }
+
+    /**
+     * Extracts text strings from custom [RemoteViews] (e.g. Flipkart, shopping flyers)
+     * where android.title and android.text extras are left null to bypass notification filters.
+     */
+    private fun extractTextsFromRemoteViews(rv: RemoteViews?): List<String> {
+        if (rv == null) return emptyList()
+        val extracted = mutableListOf<String>()
+        try {
+            val actionsField = rv.javaClass.getDeclaredField("mActions")
+            actionsField.isAccessible = true
+            val actions = actionsField.get(rv) as? List<*> ?: return emptyList()
+            for (action in actions) {
+                if (action == null) continue
+                var clazz: Class<*>? = action.javaClass
+                while (clazz != null && clazz != Any::class.java) {
+                    for (field in clazz.declaredFields) {
+                        try {
+                            field.isAccessible = true
+                            val value = field.get(action)
+                            when (value) {
+                                is CharSequence -> {
+                                    val str = value.toString().trim()
+                                    if (str.length > 1 && !extracted.contains(str)) {
+                                        extracted.add(str)
+                                    }
+                                }
+                                is RemoteViews -> {
+                                    extracted.addAll(extractTextsFromRemoteViews(value))
+                                }
+                            }
+                        } catch (_: Throwable) {}
+                    }
+                    clazz = clazz.superclass
+                }
+            }
+        } catch (_: Throwable) {
+            // Defensive: fail silently if reflection is restricted
+        }
+        return extracted
     }
 
     companion object {

@@ -13,40 +13,46 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = SievePrimary,
-    secondary = SieveSecondary,
-    tertiary = SieveTertiary,
-    background = DarkBackground,
-    surface = DarkSurface,
-    surfaceVariant = DarkSurfaceVariant,
-    onBackground = DarkOnBackground,
-    onSurface = DarkOnSurface,
-    onSurfaceVariant = DarkOnSurfaceVariant
+    primary = AppleGreen,
+    secondary = AppleBlue,
+    tertiary = ApplePurple,
+    background = AppleBackground,
+    surface = AppleCard,
+    surfaceVariant = AppleCardSecondary,
+    onBackground = AppleTextPrimary,
+    onSurface = AppleTextPrimary,
+    onSurfaceVariant = AppleTextSecondary,
+    outline = AppleSeparator,
+    outlineVariant = AppleHairline
 )
 
 // AMOLED True Black palette for OLED battery saving (turns off pixels)
 private val AmoledDarkColorScheme = darkColorScheme(
-    primary = SievePrimary,
-    secondary = SieveSecondary,
-    tertiary = SieveTertiary,
-    background = Color(0xFF000000),
-    surface = Color(0xFF0D0D11),
-    surfaceVariant = Color(0xFF1C1C22),
-    onBackground = Color(0xFFFFFFFF),
-    onSurface = Color(0xFFF1F5F9),
-    onSurfaceVariant = Color(0xFF94A3B8)
+    primary = AppleGreen,
+    secondary = AppleBlue,
+    tertiary = ApplePurple,
+    background = AppleBackground,
+    surface = AppleCard,
+    surfaceVariant = AppleCardSecondary,
+    onBackground = AppleTextPrimary,
+    onSurface = AppleTextPrimary,
+    onSurfaceVariant = AppleTextSecondary,
+    outline = AppleSeparator,
+    outlineVariant = AppleHairline
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = SievePrimary,
-    secondary = SieveSecondary,
-    tertiary = SieveTertiary,
+    primary = AppleGreen,
+    secondary = AppleBlue,
+    tertiary = ApplePurple,
     background = LightBackground,
     surface = LightSurface,
     surfaceVariant = LightSurfaceVariant,
     onBackground = LightOnBackground,
     onSurface = LightOnSurface,
-    onSurfaceVariant = LightOnSurfaceVariant
+    onSurfaceVariant = LightOnSurfaceVariant,
+    outline = Color(0xFFC6C6C8),
+    outlineVariant = Color(0xFFE5E5EA)
 )
 
 @Composable
@@ -67,7 +73,10 @@ fun SieveTheme(
             val window = (view.context as? Activity)?.window
             if (window != null) {
                 window.statusBarColor = colorScheme.background.toArgb()
-                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+                window.navigationBarColor = colorScheme.background.toArgb()
+                val insetsController = WindowCompat.getInsetsController(window, view)
+                insetsController.isAppearanceLightStatusBars = !darkTheme
+                insetsController.isAppearanceLightNavigationBars = !darkTheme
             }
         }
     }

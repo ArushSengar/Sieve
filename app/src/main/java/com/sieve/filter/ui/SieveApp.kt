@@ -51,8 +51,21 @@ import com.sieve.filter.ui.screens.BlockLogScreen
 import com.sieve.filter.ui.screens.KeywordRulesScreen
 import com.sieve.filter.ui.screens.SettingsScreen
 import com.sieve.filter.ui.screens.StatsScreen
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.unit.sp
 import com.sieve.filter.ui.theme.AllowGreen
 import com.sieve.filter.ui.theme.AllowGreenBg
+import com.sieve.filter.ui.theme.AppleBackground
+import com.sieve.filter.ui.theme.AppleFrostedGlass
+import com.sieve.filter.ui.theme.AppleGreen
+import com.sieve.filter.ui.theme.AppleGreenGlow
+import com.sieve.filter.ui.theme.AppleHairline
+import com.sieve.filter.ui.theme.AppleTextPrimary
+import com.sieve.filter.ui.theme.AppleTextSecondary
+import com.sieve.filter.ui.theme.AppleTextTertiary
 import com.sieve.filter.ui.theme.AutoBlue
 import com.sieve.filter.ui.theme.AutoBlueBg
 import com.sieve.filter.ui.theme.BlockRed
@@ -87,38 +100,62 @@ fun SieveApp() {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppleBackground)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                // Apple-style date caption
+                val dateStr = remember {
+                    java.text.SimpleDateFormat("EEEE, MMM d", java.util.Locale.getDefault())
+                        .format(java.util.Date())
+                        .uppercase()
+                }
+                Text(
+                    text = dateStr,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppleTextTertiary,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Shield,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(26.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "Sieve",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "On-Device Notification Filter",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(AppleGreenGlow),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = AppleGreen,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Sieve",
+                            style = MaterialTheme.typography.displayLarge.copy(fontSize = 30.sp),
+                            color = AppleTextPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                },
-                actions = {
-                    // Live Status Chip in Top Bar
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = statusBg,
+
+                    // Cupertino Live Shield Status Capsule
+                    Box(
                         modifier = Modifier
-                            .padding(end = 12.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(statusBg)
+                            .border(width = 0.5.dp, color = statusColor.copy(alpha = 0.4f), shape = RoundedCornerShape(16.dp))
                             .clickable {
                                 if (currentRoute != Screen.Settings.route) {
                                     navController.navigate(Screen.Settings.route) {
@@ -130,64 +167,78 @@ fun SieveApp() {
                                     }
                                 }
                             }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(7.dp)
                                     .clip(CircleShape)
                                     .background(statusColor)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = statusText,
-                                style = MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = statusColor
+                                color = statusColor,
+                                letterSpacing = 0.3.sp
                             )
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
+                }
+            }
         },
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface
+            // Apple Frosted Glass Bottom Navigation Bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppleFrostedGlass)
+                    .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp))
             ) {
-                Screen.items.forEach { screen ->
-                    val isSelected = currentRoute == screen.route
-                    NavigationBarItem(
-                        icon = {
-                            Icon(
-                                imageVector = screen.icon,
-                                contentDescription = screen.title
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = screen.title,
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        },
-                        selected = isSelected,
-                        onClick = {
-                            if (currentRoute != screen.route) {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                NavigationBar(
+                    containerColor = Color.Transparent,
+                    tonalElevation = 0.dp
+                ) {
+                    Screen.items.forEach { screen ->
+                        val isSelected = currentRoute == screen.route
+                        NavigationBarItem(
+                            icon = {
+                                Icon(
+                                    imageVector = screen.icon,
+                                    contentDescription = screen.title,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = screen.title,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                )
+                            },
+                            selected = isSelected,
+                            colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                                selectedIconColor = AppleGreen,
+                                selectedTextColor = AppleGreen,
+                                unselectedIconColor = AppleTextSecondary,
+                                unselectedTextColor = AppleTextSecondary,
+                                indicatorColor = AppleGreenGlow
+                            ),
+                            onClick = {
+                                if (currentRoute != screen.route) {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -195,6 +246,7 @@ fun SieveApp() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(AppleBackground)
                 .padding(paddingValues)
         ) {
             NavHost(

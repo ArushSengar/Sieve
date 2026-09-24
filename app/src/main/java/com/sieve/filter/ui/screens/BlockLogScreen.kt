@@ -1,9 +1,14 @@
 package com.sieve.filter.ui.screens
 
 import android.text.format.DateUtils
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,47 +27,61 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Science
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sieve.filter.model.RuleAction
 import com.sieve.filter.ui.components.AddKeywordDialog
+import com.sieve.filter.ui.components.CupertinoActivityRing
+import com.sieve.filter.ui.components.CupertinoBadge
+import com.sieve.filter.ui.components.CupertinoSearchBar
+import com.sieve.filter.ui.components.CupertinoSegmentedControl
 import com.sieve.filter.ui.components.PermissionBanner
 import com.sieve.filter.ui.components.SimulateNotificationDialog
-import com.sieve.filter.ui.theme.AiPurple
-import com.sieve.filter.ui.theme.AiPurpleBg
-import com.sieve.filter.ui.theme.AllowGreen
-import com.sieve.filter.ui.theme.BlockRed
-import com.sieve.filter.ui.theme.BlockRedBg
+import com.sieve.filter.ui.theme.AppleBlue
+import com.sieve.filter.ui.theme.AppleCard
+import com.sieve.filter.ui.theme.AppleCardElevated
+import com.sieve.filter.ui.theme.AppleCardSecondary
+import com.sieve.filter.ui.theme.AppleGreen
+import com.sieve.filter.ui.theme.AppleHairline
+import com.sieve.filter.ui.theme.AppleOrange
+import com.sieve.filter.ui.theme.ApplePurple
+import com.sieve.filter.ui.theme.AppleRed
+import com.sieve.filter.ui.theme.AppleSeparator
+import com.sieve.filter.ui.theme.AppleTextPrimary
+import com.sieve.filter.ui.theme.AppleTextSecondary
+import com.sieve.filter.ui.theme.AppleTextTertiary
 import com.sieve.filter.ui.viewmodel.BlockLogDisplayItem
 import com.sieve.filter.ui.viewmodel.BlockLogViewModel
 import java.text.SimpleDateFormat
@@ -75,9 +94,26 @@ fun BlockLogScreen(
 ) {
     val logs by viewModel.logs.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    var selectedFilterSegment by remember { mutableIntStateOf(0) }
     var showSimulateDialog by remember { mutableStateOf(false) }
     var selectedItemForDetail by remember { mutableStateOf<BlockLogDisplayItem?>(null) }
     var keywordDialogTarget by remember { mutableStateOf<Pair<String, String?>?>(null) }
+
+    // Categorized stats for Cupertino Activity Ring Hero
+    val totalCount = logs.size
+    val aiCount = remember(logs) { logs.count { it.entity.matchedRule.startsWith("AI:") } }
+    val keywordCount = remember(logs) { logs.count { it.entity.matchedRule.startsWith("KEYWORD:") } }
+    val floodCount = totalCount - aiCount - keywordCount
+
+    // Filter logs according to the selected Cupertino segmented pill
+    val filteredLogs = remember(logs, selectedFilterSegment) {
+        when (selectedFilterSegment) {
+            1 -> logs.filter { it.entity.matchedRule.startsWith("AI:") }
+            2 -> logs.filter { it.entity.matchedRule.startsWith("KEYWORD:") }
+            3 -> logs.filter { !it.entity.matchedRule.startsWith("AI:") && !it.entity.matchedRule.startsWith("KEYWORD:") }
+            else -> logs
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -87,99 +123,57 @@ fun BlockLogScreen(
         // Notification Access Health Banner
         PermissionBanner()
 
-        // Search Bar, Simulate Test Button & Clear Action Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = viewModel::onSearchQueryChanged,
-                placeholder = { Text("Search blocked logs...") },
-                leadingIcon = {
-                    Icon(imageVector = Icons.Default.Search, contentDescription = null)
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.weight(1f)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            IconButton(
-                onClick = { showSimulateDialog = true }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Science,
-                    contentDescription = "Simulate & Test Notification",
-                    tint = MaterialTheme.colorScheme.primary
+            // 1. Cupertino Sentinel Activity Hero
+            item {
+                CupertinoSentinelHeroCard(
+                    totalBlocked = totalCount,
+                    aiCount = aiCount,
+                    keywordCount = keywordCount,
+                    onSimulateClick = { showSimulateDialog = true },
+                    onClearClick = if (logs.isNotEmpty()) {
+                        { viewModel.clearAllLogs() }
+                    } else null
                 )
             }
 
-            if (logs.isNotEmpty()) {
-                IconButton(onClick = viewModel::clearAllLogs) {
-                    Icon(
-                        imageVector = Icons.Default.ClearAll,
-                        contentDescription = "Clear All Logs",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+            // 2. Cupertino Search Bar
+            item {
+                CupertinoSearchBar(
+                    query = searchQuery,
+                    onQueryChange = viewModel::onSearchQueryChanged,
+                    placeholder = "Search intercepted notifications...",
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // 3. Cupertino Segmented Filter (All, AI Spam, Keywords, Flood)
+            item {
+                CupertinoSegmentedControl(
+                    items = listOf("All ($totalCount)", "AI ($aiCount)", "Keywords ($keywordCount)", "Other ($floodCount)"),
+                    selectedIndex = selectedFilterSegment,
+                    onItemSelected = { selectedFilterSegment = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // 4. Log Items or Cupertino Empty View
+            if (filteredLogs.isEmpty()) {
+                item {
+                    CupertinoEmptyBlockLogView(
+                        isFiltered = searchQuery.isNotEmpty() || selectedFilterSegment != 0
                     )
                 }
-            }
-        }
-
-        if (showSimulateDialog) {
-            SimulateNotificationDialog(
-                onDismiss = { showSimulateDialog = false }
-            )
-        }
-
-        if (keywordDialogTarget != null) {
-            AddKeywordDialog(
-                initialPattern = keywordDialogTarget!!.first,
-                initialPackageName = keywordDialogTarget!!.second,
-                initialAction = RuleAction.BLOCK,
-                onDismiss = { keywordDialogTarget = null },
-                onConfirm = { pattern, _, packageName ->
-                    viewModel.addKeywordBlockRule(pattern, packageName)
-                    keywordDialogTarget = null
-                }
-            )
-        }
-
-        if (selectedItemForDetail != null) {
-            BlockLogDetailDialog(
-                item = selectedItemForDetail!!,
-                onDismiss = { selectedItemForDetail = null },
-                onAlwaysAllow = {
-                    viewModel.alwaysAllowApp(selectedItemForDetail!!.entity.packageName)
-                    selectedItemForDetail = null
-                },
-                onVerifyKeyword = { pattern, pkg ->
-                    keywordDialogTarget = Pair(pattern, pkg)
-                    selectedItemForDetail = null
-                },
-                onDelete = {
-                    viewModel.deleteLog(selectedItemForDetail!!.entity.id)
-                    selectedItemForDetail = null
-                }
-            )
-        }
-
-        if (logs.isEmpty()) {
-            EmptyBlockLogView()
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+            } else {
                 items(
-                    items = logs,
+                    items = filteredLogs,
                     key = { it.entity.id }
                 ) { item ->
-                    BlockLogItemCard(
+                    CupertinoBlockLogItemCard(
                         item = item,
                         onClick = { selectedItemForDetail = item },
                         onAlwaysAllow = { viewModel.alwaysAllowApp(item.entity.packageName) },
@@ -192,10 +186,219 @@ fun BlockLogScreen(
             }
         }
     }
+
+    // Dialogs
+    if (showSimulateDialog) {
+        SimulateNotificationDialog(
+            onDismiss = { showSimulateDialog = false }
+        )
+    }
+
+    if (keywordDialogTarget != null) {
+        AddKeywordDialog(
+            initialPattern = keywordDialogTarget!!.first,
+            initialPackageName = keywordDialogTarget!!.second,
+            initialAction = RuleAction.BLOCK,
+            onDismiss = { keywordDialogTarget = null },
+            onConfirm = { pattern, _, packageName ->
+                viewModel.addKeywordBlockRule(pattern, packageName)
+                keywordDialogTarget = null
+            }
+        )
+    }
+
+    if (selectedItemForDetail != null) {
+        CupertinoBlockLogDetailDialog(
+            item = selectedItemForDetail!!,
+            onDismiss = { selectedItemForDetail = null },
+            onAlwaysAllow = {
+                viewModel.alwaysAllowApp(selectedItemForDetail!!.entity.packageName)
+                selectedItemForDetail = null
+            },
+            onVerifyKeyword = { pattern, pkg ->
+                keywordDialogTarget = Pair(pattern, pkg)
+                selectedItemForDetail = null
+            },
+            onDelete = {
+                viewModel.deleteLog(selectedItemForDetail!!.entity.id)
+                selectedItemForDetail = null
+            }
+        )
+    }
 }
 
+/**
+ * Apple iOS 18 Sentinel Activity Hero Card.
+ * Displays concentric telemetry and Apple Activity Ring with live interception metrics.
+ */
 @Composable
-fun BlockLogItemCard(
+fun CupertinoSentinelHeroCard(
+    totalBlocked: Int,
+    aiCount: Int,
+    keywordCount: Int,
+    onSimulateClick: () -> Unit,
+    onClearClick: (() -> Unit)? = null
+) {
+    val progress = if (totalBlocked == 0) 0.05f else ((totalBlocked.coerceAtMost(50)) / 50f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(AppleCard)
+            .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(20.dp))
+            .padding(16.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Apple Activity Ring
+                CupertinoActivityRing(
+                    progress = progress,
+                    ringColor = AppleGreen,
+                    strokeWidth = 10.dp,
+                    modifier = Modifier.size(80.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = if (totalBlocked > 999) "999+" else "$totalBlocked",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = AppleTextPrimary
+                        )
+                        Text(
+                            text = "SHIELDED",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            fontWeight = FontWeight.Bold,
+                            color = AppleTextTertiary,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Telemetry & Status
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Sentinel Active",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleTextPrimary
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .clip(CircleShape)
+                                .background(AppleGreen)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = "100% on-device heuristic & zero telemetry",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppleTextSecondary,
+                        lineHeight = 16.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CupertinoBadge(
+                            text = "AI: $aiCount",
+                            color = ApplePurple,
+                            icon = Icons.Default.AutoAwesome
+                        )
+                        CupertinoBadge(
+                            text = "Rules: $keywordCount",
+                            color = AppleBlue,
+                            icon = Icons.Default.Shield
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = AppleSeparator)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Action Pills Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Test Notification Simulator Pill
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(AppleBlue.copy(alpha = 0.12f))
+                        .clickable(onClick = onSimulateClick)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Science,
+                        contentDescription = null,
+                        tint = AppleBlue,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Simulate & Test",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppleBlue
+                    )
+                }
+
+                // Clear All Logs Pill
+                if (onClearClick != null) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(AppleRed.copy(alpha = 0.10f))
+                            .clickable(onClick = onClearClick)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ClearAll,
+                            contentDescription = null,
+                            tint = AppleRed,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Clear History",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleRed
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Authentic Apple Inset Grouped Notification Card.
+ */
+@Composable
+fun CupertinoBlockLogItemCard(
     item: BlockLogDisplayItem,
     onClick: () -> Unit,
     onAlwaysAllow: () -> Unit,
@@ -209,6 +412,7 @@ fun BlockLogItemCard(
     ).toString()
 
     val isAiBlocked = item.entity.matchedRule.startsWith("AI:")
+    val isKeywordBlocked = item.entity.matchedRule.startsWith("KEYWORD:")
     val extractedKeyword = if (isAiBlocked) {
         if (item.entity.matchedRule.contains("(") && item.entity.matchedRule.endsWith(")")) {
             item.entity.matchedRule.substringAfter("(").substringBeforeLast(")").trim()
@@ -217,18 +421,17 @@ fun BlockLogItemCard(
         }
     } else null
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(AppleCard)
+            .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
+            .padding(14.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header: App icon, App name, time, delete
+        Column {
+            // Header: App squircle icon, title, time, delete
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -239,38 +442,40 @@ fun BlockLogItemCard(
                         contentDescription = null,
                         modifier = Modifier
                             .size(36.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(9.dp))
                     )
                 } else {
                     Box(
                         modifier = Modifier
                             .size(36.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(AppleBlue.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = item.appName.take(1).uppercase(),
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = AppleBlue,
+                            fontSize = 16.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = item.appName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppleTextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = item.entity.packageName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppleTextTertiary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -279,147 +484,126 @@ fun BlockLogItemCard(
                 Text(
                     text = timeAgo,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = AppleTextTertiary
                 )
 
-                IconButton(onClick = onDelete) {
+                Spacer(modifier = Modifier.width(6.dp))
+
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(28.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = "Delete log entry",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.size(20.dp)
+                        contentDescription = "Delete entry",
+                        tint = AppleTextTertiary,
+                        modifier = Modifier.size(17.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Notification Title & Text
+            // Notification Content
             if (!item.entity.title.isNullOrBlank()) {
                 Text(
                     text = item.entity.title,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = AppleTextPrimary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
 
             if (!item.entity.textSnippet.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = item.entity.textSnippet,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppleTextSecondary,
                     maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Footer: Matched Rule badge
+            // Footer: Cupertino Badges & Quick Action Pills
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Dismissed Reason badge
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (isAiBlocked) AiPurpleBg else BlockRedBg
+                // Rule Badge
+                if (isAiBlocked) {
+                    CupertinoBadge(
+                        text = item.entity.matchedRule,
+                        color = ApplePurple,
+                        icon = Icons.Default.AutoAwesome
+                    )
+                } else if (isKeywordBlocked) {
+                    CupertinoBadge(
+                        text = item.entity.matchedRule,
+                        color = AppleRed,
+                        icon = Icons.Default.Block
+                    )
+                } else {
+                    CupertinoBadge(
+                        text = item.entity.matchedRule,
+                        color = AppleOrange,
+                        icon = Icons.Default.Shield
+                    )
+                }
+
+                // Action Pills
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (isAiBlocked) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = AiPurple,
-                                modifier = Modifier.size(12.dp)
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(BlockRed)
+                    if (isAiBlocked && !extractedKeyword.isNullOrBlank() && onVerifyKeyword != null) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(ApplePurple.copy(alpha = 0.15f))
+                                .clickable { onVerifyKeyword(extractedKeyword, null) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "Verify Rule",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ApplePurple
                             )
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = item.entity.matchedRule,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isAiBlocked) AiPurple else BlockRed,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
                     }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Action buttons row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (isAiBlocked && !extractedKeyword.isNullOrBlank() && onVerifyKeyword != null) {
-                    OutlinedButton(
-                        onClick = { onVerifyKeyword(extractedKeyword, null) },
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(AppleGreen.copy(alpha = 0.15f))
+                            .clickable(onClick = onAlwaysAllow)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = AiPurple,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Verify Keyword",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = AiPurple,
-                            fontWeight = FontWeight.SemiBold
+                            text = "Always Allow",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleGreen
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-
-                // Quick Action: Always Allow
-                OutlinedButton(
-                    onClick = onAlwaysAllow,
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        tint = AllowGreen,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Always Allow",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = AllowGreen,
-                        fontWeight = FontWeight.SemiBold
-                    )
                 }
             }
         }
     }
 }
 
+/**
+ * Cupertino Action Sheet / Modal Details Dialog.
+ */
 @Composable
-fun BlockLogDetailDialog(
+fun CupertinoBlockLogDetailDialog(
     item: BlockLogDisplayItem,
     onDismiss: () -> Unit,
     onAlwaysAllow: () -> Unit,
@@ -444,6 +628,8 @@ fun BlockLogDetailDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = AppleCardElevated,
+        shape = RoundedCornerShape(22.dp),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (item.appIcon != null) {
@@ -451,21 +637,22 @@ fun BlockLogDetailDialog(
                         bitmap = item.appIcon.toBitmap(56, 56).asImageBitmap(),
                         contentDescription = null,
                         modifier = Modifier
-                            .size(34.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(9.dp))
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                 }
                 Column {
                     Text(
                         text = item.appName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = AppleTextPrimary
                     )
                     Text(
                         text = item.entity.packageName,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = AppleTextTertiary
                     )
                 }
             }
@@ -480,14 +667,16 @@ fun BlockLogDetailDialog(
                         Text(
                             text = "TITLE",
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleTextTertiary,
+                            letterSpacing = 0.5.sp
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = item.entity.title,
                             style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Medium,
+                            color = AppleTextPrimary
                         )
                     }
                 }
@@ -497,137 +686,178 @@ fun BlockLogDetailDialog(
                         Text(
                             text = "MESSAGE",
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleTextTertiary,
+                            letterSpacing = 0.5.sp
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = item.entity.textSnippet,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppleTextSecondary
                         )
                     }
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (isAiBlocked) AiPurpleBg else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.fillMaxWidth()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(AppleCardSecondary)
+                        .padding(12.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "Matched: ${item.entity.matchedRule}",
+                            text = "Matched Rule: ${item.entity.matchedRule}",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (isAiBlocked) AiPurple else BlockRed
+                            color = if (isAiBlocked) ApplePurple else AppleRed
                         )
                         if (isAiBlocked && !extractedKeyword.isNullOrBlank()) {
                             Text(
                                 text = "Candidate Keyword: \"$extractedKeyword\"",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = AppleBlue
                             )
                         }
                         item.entity.channelId?.let {
                             Text(
                                 text = "Channel: $it",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = AppleTextTertiary
                             )
                         }
                         Text(
-                            text = "Logged: $formattedDate",
+                            text = "Intercepted: $formattedDate",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = AppleTextTertiary
                         )
                     }
                 }
             }
         },
         confirmButton = {
-            Row {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (isAiBlocked && !extractedKeyword.isNullOrBlank() && onVerifyKeyword != null) {
-                    TextButton(
-                        onClick = {
-                            onVerifyKeyword(extractedKeyword, null)
-                        }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(ApplePurple.copy(alpha = 0.15f))
+                            .clickable { onVerifyKeyword(extractedKeyword, null) }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
-                        Text("Verify Keyword", color = AiPurple, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "Verify Rule",
+                            color = ApplePurple,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                    Spacer(modifier = Modifier.width(4.dp))
                 }
-                TextButton(
-                    onClick = {
-                        onAlwaysAllow()
-                    }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(AppleGreen.copy(alpha = 0.15f))
+                        .clickable(onClick = onAlwaysAllow)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    Text("Always Allow App")
+                    Text(
+                        text = "Always Allow",
+                        color = AppleGreen,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         },
         dismissButton = {
-            Row {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                    }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(AppleRed.copy(alpha = 0.15f))
+                        .clickable(onClick = onDelete)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    Text("Delete Log", color = BlockRed)
+                    Text(
+                        text = "Delete",
+                        color = AppleRed,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                Spacer(modifier = Modifier.width(4.dp))
-                TextButton(onClick = onDismiss) {
-                    Text("Close")
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(AppleCardSecondary)
+                        .clickable(onClick = onDismiss)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Close",
+                        color = AppleTextPrimary,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
     )
 }
 
+/**
+ * Cupertino Empty State.
+ */
 @Composable
-fun EmptyBlockLogView() {
+fun CupertinoEmptyBlockLogView(
+    isFiltered: Boolean = false
+) {
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+            .fillMaxWidth()
+            .padding(vertical = 48.dp, horizontal = 24.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                modifier = Modifier.size(80.dp)
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(AppleGreen.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.NotificationsOff,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
+                Icon(
+                    imageVector = if (isFiltered) Icons.Default.NotificationsOff else Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = AppleGreen,
+                    modifier = Modifier.size(36.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "No Blocked Notifications",
+                text = if (isFiltered) "No Matching Logs" else "Clean Notification Shade",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold,
+                color = AppleTextPrimary
             )
 
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Sieve is quietly guarding your notification shade. Any promotional spam dismissed will show up here.",
+                text = if (isFiltered)
+                    "No blocked notifications match your current search or segment filter."
+                else
+                    "Sieve is actively guarding your notification tray. Any intercepted promotional spam will be cataloged here.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                color = AppleTextSecondary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = 20.sp
             )
         }
     }

@@ -7,7 +7,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,15 +21,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.SecurityUpdateWarning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -36,17 +34,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.sieve.filter.ui.theme.AllowGreen
-import com.sieve.filter.ui.theme.AllowGreenBg
+import com.sieve.filter.ui.theme.AppleCard
+import com.sieve.filter.ui.theme.AppleHairline
+import com.sieve.filter.ui.theme.AppleOrange
+import com.sieve.filter.ui.theme.AppleTextPrimary
+import com.sieve.filter.ui.theme.AppleTextSecondary
 
 /**
  * Checks if the NotificationListenerService permission is granted.
@@ -60,6 +61,9 @@ fun isNotificationServiceEnabled(context: Context): Boolean {
     return flat.contains(packageName)
 }
 
+/**
+ * Cupertino-styled notification permission alert banner.
+ */
 @Composable
 fun PermissionBanner(
     modifier: Modifier = Modifier
@@ -68,7 +72,6 @@ fun PermissionBanner(
     val lifecycleOwner = LocalLifecycleOwner.current
     var isGranted by remember { mutableStateOf(isNotificationServiceEnabled(context)) }
 
-    // Refresh status when user returns from Settings screen
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -87,91 +90,60 @@ fun PermissionBanner(
             enter = expandVertically(),
             exit = shrinkVertically()
         ) {
-            Card(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
-                )
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(AppleCard)
+                    .border(width = 0.5.dp, color = AppleOrange.copy(alpha = 0.4f), shape = RoundedCornerShape(18.dp))
+                    .clickable {
+                        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                        context.startActivity(intent)
+                    }
+                    .padding(14.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(AppleOrange.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.SecurityUpdateWarning,
+                            imageVector = Icons.Default.Warning,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(24.dp)
+                            tint = AppleOrange,
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Notification Access Needed",
-                            style = MaterialTheme.typography.titleMedium,
+                            text = "Notification Access Required",
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
+                            color = AppleTextPrimary
                         )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "Sieve runs 100% on-device to inspect incoming notifications and dismiss spam. Tap below to grant notification access in Android Settings.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Button(
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                            context.startActivity(intent)
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Open System Settings",
-                            fontWeight = FontWeight.SemiBold
+                            text = "Tap to grant listener access in Android Settings so Sieve can filter spam.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AppleTextSecondary,
+                            lineHeight = 15.sp
                         )
                     }
-                }
-            }
-        }
 
-        AnimatedVisibility(
-            visible = isGranted,
-            enter = expandVertically(),
-            exit = shrinkVertically()
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = AllowGreenBg
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     Icon(
-                        imageVector = Icons.Default.CheckCircle,
+                        imageVector = Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = AllowGreen,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "Active & Guarding — On-Device Filtering Active",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = AllowGreen,
-                        fontWeight = FontWeight.SemiBold
+                        tint = AppleOrange,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

@@ -1,6 +1,7 @@
 package com.sieve.filter.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,26 +29,16 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Smartphone
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,17 +50,28 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sieve.filter.data.local.entity.AiSuggestedRuleEntity
 import com.sieve.filter.data.local.entity.KeywordRuleEntity
 import com.sieve.filter.model.RuleAction
 import com.sieve.filter.ui.components.AddKeywordDialog
-import com.sieve.filter.ui.theme.AiPurple
-import com.sieve.filter.ui.theme.AiPurpleBg
-import com.sieve.filter.ui.theme.AllowGreen
-import com.sieve.filter.ui.theme.AllowGreenBg
-import com.sieve.filter.ui.theme.BlockRed
-import com.sieve.filter.ui.theme.BlockRedBg
+import com.sieve.filter.ui.components.CupertinoBadge
+import com.sieve.filter.ui.components.CupertinoSearchBar
+import com.sieve.filter.ui.components.CupertinoSegmentedControl
+import com.sieve.filter.ui.theme.AppleBlue
+import com.sieve.filter.ui.theme.AppleCard
+import com.sieve.filter.ui.theme.AppleCardElevated
+import com.sieve.filter.ui.theme.AppleCardSecondary
+import com.sieve.filter.ui.theme.AppleGreen
+import com.sieve.filter.ui.theme.AppleHairline
+import com.sieve.filter.ui.theme.AppleOrange
+import com.sieve.filter.ui.theme.ApplePurple
+import com.sieve.filter.ui.theme.AppleRed
+import com.sieve.filter.ui.theme.AppleSeparator
+import com.sieve.filter.ui.theme.AppleTextPrimary
+import com.sieve.filter.ui.theme.AppleTextSecondary
+import com.sieve.filter.ui.theme.AppleTextTertiary
 import com.sieve.filter.ui.viewmodel.KeywordFilterTab
 import com.sieve.filter.ui.viewmodel.KeywordRulesViewModel
 
@@ -85,251 +87,223 @@ fun KeywordRulesScreen(
 
     var showAddDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        floatingActionButton = {
-            if (selectedTab != KeywordFilterTab.AI_SUGGESTIONS) {
-                FloatingActionButton(
-                    onClick = { showAddDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White,
-                    shape = CircleShape
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Keyword Rule")
-                }
-            }
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
+    val totalRules = rules.size
+    val blockRulesCount = remember(rules) { rules.count { it.getRuleAction() == RuleAction.BLOCK } }
+    val allowRulesCount = remember(rules) { rules.count { it.getRuleAction() == RuleAction.ALLOW } }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Scrollable Tabs: All | Block List | Allow List | AI Suggestions (Count)
-            ScrollableTabRow(
-                selectedTabIndex = selectedTab.ordinal,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary,
-                edgePadding = 16.dp
-            ) {
-                KeywordFilterTab.entries.forEach { tab ->
-                    Tab(
-                        selected = selectedTab == tab,
-                        onClick = { viewModel.onTabSelected(tab) },
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = when (tab) {
-                                        KeywordFilterTab.ALL -> "All"
-                                        KeywordFilterTab.BLOCK -> "Block List"
-                                        KeywordFilterTab.ALLOW -> "Allow List"
-                                        KeywordFilterTab.AI_SUGGESTIONS -> "AI Suggestions"
-                                    },
-                                    fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
-                                )
-
-                                if (tab == KeywordFilterTab.AI_SUGGESTIONS && pendingCount > 0) {
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = AiPurple,
-                                        modifier = Modifier.size(20.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = if (pendingCount > 99) "99+" else "$pendingCount",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = Color.White,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-
-            // AI Pending Banner (if pending suggestions exist and user is viewing other tabs)
-            if (selectedTab != KeywordFilterTab.AI_SUGGESTIONS && pendingCount > 0) {
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = AiPurpleBg),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .clickable { viewModel.onTabSelected(KeywordFilterTab.AI_SUGGESTIONS) }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = AiPurple,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "$pendingCount new AI spam detection${if (pendingCount > 1) "s" else ""}",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "Tap to verify and add candidate keywords to rules",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Text(
-                            text = "Review →",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AiPurple
-                        )
-                    }
-                }
-            }
-
-            // Search Bar & Reset Defaults Button
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = viewModel::onSearchQueryChanged,
-                    placeholder = {
-                        Text(
-                            if (selectedTab == KeywordFilterTab.AI_SUGGESTIONS) "Filter AI suggestions..."
-                            else "Filter keywords..."
-                        )
+            // 1. Cupertino Segmented Control (All, Block, Allow, AI Suggestions)
+            item {
+                CupertinoSegmentedControl(
+                    items = listOf(
+                        "All ($totalRules)",
+                        "Block ($blockRulesCount)",
+                        "Allow ($allowRulesCount)",
+                        if (pendingCount > 0) "AI ($pendingCount)" else "AI Sparks"
+                    ),
+                    selectedIndex = selectedTab.ordinal,
+                    onItemSelected = { index ->
+                        viewModel.onTabSelected(KeywordFilterTab.entries[index])
                     },
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Default.Search, contentDescription = null)
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 )
-
-                if (selectedTab != KeywordFilterTab.AI_SUGGESTIONS) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = viewModel::resetToDefaults
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Reset to Default Rules",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
             }
 
-            // Content Area
-            if (selectedTab == KeywordFilterTab.AI_SUGGESTIONS) {
-                // AI Suggestions List
-                if (pendingSuggestions.isEmpty()) {
+            // 2. AI Suggestions Alert Banner (if user is on another tab but pending suggestions exist)
+            if (selectedTab != KeywordFilterTab.AI_SUGGESTIONS && pendingCount > 0) {
+                item {
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(ApplePurple.copy(alpha = 0.12f))
+                            .border(width = 0.5.dp, color = ApplePurple.copy(alpha = 0.3f), shape = RoundedCornerShape(16.dp))
+                            .clickable { viewModel.onTabSelected(KeywordFilterTab.AI_SUGGESTIONS) }
+                            .padding(14.dp)
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = AiPurpleBg,
-                                modifier = Modifier.size(64.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(ApplePurple),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Icon(
                                         imageVector = Icons.Default.AutoAwesome,
                                         contentDescription = null,
-                                        tint = AiPurple,
-                                        modifier = Modifier.size(32.dp)
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = "$pendingCount New AI Detection${if (pendingCount > 1) "s" else ""}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = AppleTextPrimary
+                                    )
+                                    Text(
+                                        text = "Tap to review candidate spam keywords",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = AppleTextSecondary
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(14.dp))
                             Text(
-                                text = "No Pending AI Suggestions",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "When promotional notifications slip through standard keywords, Sieve's on-device AI classifier automatically blocks them and extracts keyword suggestions here for verification.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(
-                            items = pendingSuggestions,
-                            key = { it.id }
-                        ) { suggestion ->
-                            AiSuggestedRuleCard(
-                                suggestion = suggestion,
-                                onVerifyAndAdd = { asGlobal ->
-                                    viewModel.acceptAiSuggestion(suggestion.id, asGlobal)
-                                },
-                                onDismiss = { viewModel.dismissAiSuggestion(suggestion.id) }
+                                text = "Review →",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = ApplePurple
                             )
                         }
                     }
                 }
-            } else {
-                // Standard Keyword Rules List
-                if (rules.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No keyword rules found.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+            }
+
+            // 3. Search Bar & Action Buttons Row
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CupertinoSearchBar(
+                        query = searchQuery,
+                        onQueryChange = viewModel::onSearchQueryChanged,
+                        placeholder = if (selectedTab == KeywordFilterTab.AI_SUGGESTIONS) "Filter AI suggestions..." else "Filter keyword rules...",
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // + New Rule Apple Pill Button
+                    if (selectedTab != KeywordFilterTab.AI_SUGGESTIONS) {
+                        Box(
+                            modifier = Modifier
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(AppleBlue)
+                                .clickable { showAddDialog = true }
+                                .padding(horizontal = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Add",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        // Reset Defaults Pill
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(AppleCardSecondary)
+                                .clickable { viewModel.resetToDefaults() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Reset Defaults",
+                                tint = AppleTextSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 4. Content Area
+            if (selectedTab == KeywordFilterTab.AI_SUGGESTIONS) {
+                // AI Suggestions List
+                if (pendingSuggestions.isEmpty()) {
+                    item {
+                        CupertinoEmptyAiSuggestionsView()
                     }
                 } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(
-                            items = rules,
-                            key = { it.id }
-                        ) { rule ->
-                            KeywordRuleCard(
-                                rule = rule,
-                                onDelete = { viewModel.deleteRule(rule.id) }
+                    items(
+                        count = pendingSuggestions.size,
+                        key = { pendingSuggestions[it].id }
+                    ) { index ->
+                        val suggestion = pendingSuggestions[index]
+                        CupertinoAiSuggestedRuleCard(
+                            suggestion = suggestion,
+                            onVerifyAndAdd = { asGlobal ->
+                                viewModel.acceptAiSuggestion(suggestion.id, asGlobal)
+                            },
+                            onDismiss = { viewModel.dismissAiSuggestion(suggestion.id) }
+                        )
+                    }
+                }
+            } else {
+                // Inset Grouped Keyword Rules
+                if (rules.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (searchQuery.isNotBlank()) "No rules match \"$searchQuery\"" else "No keyword rules defined",
+                                color = AppleTextTertiary,
+                                style = MaterialTheme.typography.bodyMedium
                             )
+                        }
+                    }
+                } else {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(AppleCard)
+                                .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(20.dp))
+                        ) {
+                            Column {
+                                rules.forEachIndexed { index, rule ->
+                                    CupertinoKeywordRuleRow(
+                                        rule = rule,
+                                        onDelete = { viewModel.deleteRule(rule.id) }
+                                    )
+                                    if (index < rules.size - 1) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(start = 58.dp),
+                                            thickness = 0.5.dp,
+                                            color = AppleSeparator
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -348,55 +322,129 @@ fun KeywordRulesScreen(
     }
 }
 
+/**
+ * Cupertino Inset Grouped Table Row for Keyword Rule.
+ */
 @Composable
-fun AiSuggestedRuleCard(
+fun CupertinoKeywordRuleRow(
+    rule: KeywordRuleEntity,
+    onDelete: () -> Unit
+) {
+    val isBlock = rule.getRuleAction() == RuleAction.BLOCK
+    val badgeColor = if (isBlock) AppleRed else AppleGreen
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Icon squircle (32dp, 8dp radius)
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(badgeColor.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isBlock) Icons.Default.Block else Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = badgeColor,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Pattern and Scope Details
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = rule.pattern,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = AppleTextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (rule.isGlobal) Icons.Default.Public else Icons.Default.Smartphone,
+                    contentDescription = null,
+                    tint = AppleTextTertiary,
+                    modifier = Modifier.size(11.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = if (rule.isGlobal) "Global (All Apps)" else "${rule.packageName}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppleTextTertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        // Action Badge (BLOCK / ALLOW)
+        CupertinoBadge(
+            text = if (isBlock) "BLOCK" else "ALLOW",
+            color = badgeColor
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Delete Action
+        IconButton(
+            onClick = onDelete,
+            modifier = Modifier.size(28.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.DeleteOutline,
+                contentDescription = "Delete Rule",
+                tint = AppleTextTertiary,
+                modifier = Modifier.size(17.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Cupertino Card for On-Device AI Candidate Suggestions.
+ */
+@Composable
+fun CupertinoAiSuggestedRuleCard(
     suggestion: AiSuggestedRuleEntity,
     onVerifyAndAdd: (asGlobal: Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        modifier = Modifier.fillMaxWidth()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(AppleCard)
+            .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(18.dp))
+            .padding(14.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column {
             // Header: Category badge & App name
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = AiPurpleBg
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = AiPurple,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = suggestion.category,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = AiPurple,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                CupertinoBadge(
+                    text = suggestion.category,
+                    color = ApplePurple,
+                    icon = Icons.Default.AutoAwesome
+                )
 
                 Text(
                     text = suggestion.packageName,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = AppleTextTertiary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -404,35 +452,38 @@ fun AiSuggestedRuleCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Candidate Keyword Highlight
+            // Suggested Keyword
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "Suggested Keyword: ",
+                    text = "Candidate: ",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = AppleTextSecondary
                 )
                 Text(
-                    text = suggestion.suggestedKeyword,
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "\"${suggestion.suggestedKeyword}\"",
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = AppleBlue
                 )
             }
 
-            // Notification snippet context
+            // Notification Sample Snippet Context
             if (!suggestion.sampleTitle.isNullOrBlank() || !suggestion.sampleText.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                    modifier = Modifier.fillMaxWidth()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(AppleCardSecondary)
+                        .padding(10.dp)
                 ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         if (!suggestion.sampleTitle.isNullOrBlank()) {
                             Text(
-                                text = "\"${suggestion.sampleTitle}\"",
+                                text = suggestion.sampleTitle,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
+                                color = AppleTextPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -442,7 +493,7 @@ fun AiSuggestedRuleCard(
                                 text = suggestion.sampleText,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontStyle = FontStyle.Italic,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = AppleTextSecondary,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -453,130 +504,108 @@ fun AiSuggestedRuleCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Action Buttons: One-tap Verify & Add Rule, and Dismiss
+            // Action Pills Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
-                    onClick = { onVerifyAndAdd(true) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                // Verify & Add Rule Pill
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(AppleGreen.copy(alpha = 0.15f))
+                        .clickable { onVerifyAndAdd(true) }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Verify & Add Rule", style = MaterialTheme.typography.labelMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = AppleGreen,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Accept Rule",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppleGreen
+                        )
+                    }
                 }
 
-                OutlinedButton(
-                    onClick = onDismiss,
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                // Dismiss Pill
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(AppleCardSecondary)
+                        .clickable(onClick = onDismiss)
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Dismiss", style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        text = "Dismiss",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = AppleTextSecondary
+                    )
                 }
             }
         }
     }
 }
 
+/**
+ * Cupertino Empty State for AI Suggestions.
+ */
 @Composable
-fun KeywordRuleCard(
-    rule: KeywordRuleEntity,
-    onDelete: () -> Unit
-) {
-    val isBlock = rule.getRuleAction() == RuleAction.BLOCK
-
-    Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-        modifier = Modifier.fillMaxWidth()
+fun CupertinoEmptyAiSuggestionsView() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp, horizontal = 24.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            // Action Icon badge
-            Surface(
-                shape = CircleShape,
-                color = if (isBlock) BlockRedBg else AllowGreenBg,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = if (isBlock) Icons.Default.Block else Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = if (isBlock) BlockRed else AllowGreen,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Keyword pattern + Scope
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = rule.pattern,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (rule.isGlobal) Icons.Default.Public else Icons.Default.Smartphone,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (rule.isGlobal) "Global (All Apps)" else "App: ${rule.packageName}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Action Badge
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = if (isBlock) BlockRedBg else AllowGreenBg
-            ) {
-                Text(
-                    text = if (isBlock) "BLOCK" else "ALLOW",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (isBlock) BlockRed else AllowGreen,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            // Delete Action
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(32.dp)
+            Box(
+                modifier = Modifier
+                    .size(68.dp)
+                    .clip(CircleShape)
+                    .background(ApplePurple.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.DeleteOutline,
-                    contentDescription = "Delete Rule",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.size(20.dp)
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = ApplePurple,
+                    modifier = Modifier.size(34.dp)
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "No Pending AI Suggestions",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = AppleTextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "When promotional notifications slip through standard keywords, Sieve's on-device neural classifier blocks them and extracts suggested rules here for verification.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppleTextSecondary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = 20.sp
+            )
         }
     }
 }

@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,20 +45,12 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -77,14 +70,28 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.sieve.filter.ui.theme.AiPurple
-import com.sieve.filter.ui.theme.AiPurpleBg
-import com.sieve.filter.ui.theme.AllowGreen
-import com.sieve.filter.ui.theme.AllowGreenBg
-import com.sieve.filter.ui.theme.BlockRed
+import com.sieve.filter.ui.components.CupertinoBadge
+import com.sieve.filter.ui.components.CupertinoGroupedRow
+import com.sieve.filter.ui.components.CupertinoInsetGroup
+import com.sieve.filter.ui.components.CupertinoSegmentedControl
+import com.sieve.filter.ui.components.CupertinoSwitch
+import com.sieve.filter.ui.theme.AppleBlue
+import com.sieve.filter.ui.theme.AppleCard
+import com.sieve.filter.ui.theme.AppleCardElevated
+import com.sieve.filter.ui.theme.AppleCardSecondary
+import com.sieve.filter.ui.theme.AppleGreen
+import com.sieve.filter.ui.theme.AppleHairline
+import com.sieve.filter.ui.theme.AppleOrange
+import com.sieve.filter.ui.theme.ApplePurple
+import com.sieve.filter.ui.theme.AppleRed
+import com.sieve.filter.ui.theme.AppleSeparator
+import com.sieve.filter.ui.theme.AppleTextPrimary
+import com.sieve.filter.ui.theme.AppleTextSecondary
+import com.sieve.filter.ui.theme.AppleTextTertiary
 import com.sieve.filter.ui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
@@ -149,702 +156,161 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Section: Master Switch
+        // 1. Group: CORE PROTECTION
         item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isFilterEnabled) {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    }
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
+            CupertinoInsetGroup(
+                title = "Core Protection Modules",
+                footer = "Sieve evaluates incoming notifications 100% on-device. When disabled, all notifications pass through unaltered."
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isFilterEnabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PowerSettingsNew,
-                                contentDescription = null,
-                                tint = if (isFilterEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "Sieve Filter Protection",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = if (isFilterEnabled) "Actively filtering promotional spam" else "Paused — all notifications pass through",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = isFilterEnabled,
-                        onCheckedChange = viewModel::setFilterEnabled
-                    )
-                }
-            }
-        }
-
-        // Section: Smart AI Spam Classifier
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isAiFilterEnabled) {
-                        AiPurpleBg
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    }
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isAiFilterEnabled) AiPurple.copy(alpha = 0.2f)
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                tint = if (isAiFilterEnabled) AiPurple else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "Smart AI Spam Blocker",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = AiPurple
-                            ) {
-                                Text(
-                                    text = "100% ON-DEVICE",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    softWrap = false,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = if (isAiFilterEnabled) "Intelligently blocks promotional bait without exact keywords and suggests rules" else "Disabled — only exact keyword rules are evaluated",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = isAiFilterEnabled,
-                        onCheckedChange = viewModel::setAiFilterEnabled
-                    )
-                }
-            }
-        }
-
-        // Section: Smart E-Commerce & Food Shield
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isCommercialShieldEnabled) {
-                        AllowGreenBg
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    }
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isCommercialShieldEnabled) AllowGreen.copy(alpha = 0.2f)
-                                    else MaterialTheme.colorScheme.surfaceVariant
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ShoppingCart,
-                                contentDescription = null,
-                                tint = if (isCommercialShieldEnabled) AllowGreen else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "Smart E-Commerce Shield",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = AllowGreen
-                            ) {
-                                Text(
-                                    text = "ORDER UPDATES ONLY",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    softWrap = false,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = if (isCommercialShieldEnabled)
-                                    "Silences marketing broadcasts from Flipkart, Domino's, Myntra, Swiggy, etc. Delivery, tracking & OTPs always pass through"
-                                else
-                                    "Disabled — shopping apps evaluated by standard keywords only",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = isCommercialShieldEnabled,
-                        onCheckedChange = viewModel::setCommercialShieldEnabled
-                    )
-                }
-            }
-        }
-
-        // Section: Service Health & Rebind Diagnostic
-        item {
-            Text(
-                text = "Service Health",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    // 1. Notification Listener Status
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            val statusColor = when {
-                                !isPermissionGranted -> BlockRed
-                                isListening -> AllowGreen
-                                else -> Color(0xFFE65100)
-                            }
-                            val statusIcon = when {
-                                !isPermissionGranted -> Icons.Default.Error
-                                isListening -> Icons.Default.CheckCircle
-                                else -> Icons.Default.Warning
-                            }
-                            Icon(
-                                imageVector = statusIcon,
-                                contentDescription = null,
-                                tint = statusColor,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = when {
-                                        !isPermissionGranted -> "Permission Required"
-                                        isListening -> "Listener Active"
-                                        else -> "Service Standby / Disconnected"
-                                    },
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = when {
-                                        !isPermissionGranted -> "Notification access must be granted in Android Settings."
-                                        isListening -> "Sieve is connected and actively listening for spam."
-                                        else -> "Service binding dropped. Tap Rebind to reconnect."
-                                    },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    // Action buttons for service
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (!isPermissionGranted) {
-                            Button(
-                                onClick = {
-                                    val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                                    context.startActivity(intent)
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text("Grant Notification Access")
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = viewModel::triggerRebind,
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Rebind Service")
-                            }
-                            OutlinedButton(
-                                onClick = {
-                                    val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                                    context.startActivity(intent)
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text("System Settings")
-                            }
-                        }
-                    }
-
-                    // 2. Battery Optimization Status
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Icon(
-                                imageVector = if (isBatteryIgnored) Icons.Default.CheckCircle else Icons.Default.Info,
-                                contentDescription = null,
-                                tint = if (isBatteryIgnored) AllowGreen else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = if (isBatteryIgnored) "Battery Optimization: Unrestricted" else "Battery Optimization: Active",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    text = if (isBatteryIgnored) "Background listener will not be killed by OS." else "OS may kill background listener to save battery.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    if (!isBatteryIgnored && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        OutlinedButton(
-                            onClick = {
-                                try {
-                                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                        data = Uri.parse("package:${context.packageName}")
-                                    }
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {
-                                    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                                    context.startActivity(intent)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Request Battery Exemption")
-                        }
-                    }
-                }
-            }
-        }
-
-        // Section: OEM Battery Whitelist Guide (Tailored to Device)
-        item {
-            Text(
-                text = "OEM Background Optimization",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (oem.isKnownAggressive) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
-                    else MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.BatterySaver,
-                            contentDescription = null,
-                            tint = if (oem.isKnownAggressive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
+                // Master Shield Switch
+                CupertinoGroupedRow(
+                    title = "Master Shield Protection",
+                    subtitle = if (isFilterEnabled) "Actively filtering promotional spam" else "Paused — all notifications pass through",
+                    icon = Icons.Default.PowerSettingsNew,
+                    iconBg = if (isFilterEnabled) AppleGreen else Color(0xFF39393D),
+                    trailing = {
+                        CupertinoSwitch(
+                            checked = isFilterEnabled,
+                            onCheckedChange = viewModel::setFilterEnabled,
+                            activeColor = AppleGreen
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "Device: ${oem.brandName}",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            if (oem.isKnownAggressive) {
-                                Text(
-                                    text = "This manufacturer aggressively kills background listeners.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
                     }
+                )
 
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        oem.instructions.forEachIndexed { idx, step ->
-                            Text(
-                                text = "${idx + 1}. $step",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                // AI Spam Blocker
+                CupertinoGroupedRow(
+                    title = "Smart AI Spam Blocker",
+                    subtitle = if (isAiFilterEnabled) "Neural heuristic classifier with candidate rule extraction" else "Disabled — only exact keywords evaluated",
+                    icon = Icons.Default.AutoAwesome,
+                    iconBg = ApplePurple,
+                    trailing = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CupertinoBadge(text = "ON-DEVICE", color = ApplePurple)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            CupertinoSwitch(
+                                checked = isAiFilterEnabled,
+                                onCheckedChange = viewModel::setAiFilterEnabled,
+                                activeColor = ApplePurple
                             )
                         }
                     }
+                )
 
-                    OutlinedButton(
-                        onClick = {
-                            try {
-                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(oem.dontKillMyAppUrl))
-                                context.startActivity(browserIntent)
-                            } catch (_: Exception) {}
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("View DontKillMyApp.com Guide")
+                // Commercial & Shopping Shield
+                CupertinoGroupedRow(
+                    title = "Smart E-Commerce Shield",
+                    subtitle = if (isCommercialShieldEnabled) "Silences marketing broadcasts. OTPs & deliveries pass through" else "Disabled — shopping apps bypass special heuristics",
+                    icon = Icons.Default.ShoppingCart,
+                    iconBg = AppleBlue,
+                    trailing = {
+                        CupertinoSwitch(
+                            checked = isCommercialShieldEnabled,
+                            onCheckedChange = viewModel::setCommercialShieldEnabled,
+                            activeColor = AppleBlue
+                        )
                     }
-                }
+                )
+
+                // Anti-Flooding / Deduplication
+                CupertinoGroupedRow(
+                    title = "Anti-Flooding Protection",
+                    subtitle = if (isDeduplicationEnabled) "Silences identical duplicate notifications within 10 min" else "Disabled",
+                    icon = Icons.Default.Repeat,
+                    iconBg = AppleOrange,
+                    showDivider = false,
+                    trailing = {
+                        CupertinoSwitch(
+                            checked = isDeduplicationEnabled,
+                            onCheckedChange = viewModel::setDeduplicationEnabled,
+                            activeColor = AppleOrange
+                        )
+                    }
+                )
             }
         }
 
-        // Section: Display & Battery Savings (AMOLED)
+        // 2. Group: FOCUS & SCHEDULE
         item {
-            Text(
-                text = "Display & Power",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-                modifier = Modifier.fillMaxWidth()
+            CupertinoInsetGroup(
+                title = "Focus & Quiet Hours",
+                footer = if (isQuietHoursEnabled) "Notifications received during quiet hours pass through unblocked." else null
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.DarkMode,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "AMOLED True Black Mode",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = "Uses pure #000000 background to turn off OLED pixels and maximize battery life",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = isAmoledBlackMode,
-                        onCheckedChange = viewModel::setAmoledBlackMode
-                    )
-                }
-            }
-        }
-
-        // Section: Anti-Flooding & Deduplication
-        item {
-            Text(
-                text = "Anti-Flooding Protection",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Repeat,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "Deduplication / Anti-Flooding",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = "Dismiss repeated identical notifications from the same app within 10 minutes",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = isDeduplicationEnabled,
-                        onCheckedChange = viewModel::setDeduplicationEnabled
-                    )
-                }
-            }
-        }
-
-        // Section: Quiet Hours (Schedule)
-        item {
-            Text(
-                text = "Schedule & Quiet Hours",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Bedtime,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "Quiet Hours",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = "Auto-pause filtering during set hours",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Switch(
+                CupertinoGroupedRow(
+                    title = "Quiet Hours Schedule",
+                    subtitle = if (isQuietHoursEnabled) "Filtering paused during sleep/focus schedule" else "Inactive",
+                    icon = Icons.Default.Bedtime,
+                    iconBg = ApplePurple,
+                    showDivider = isQuietHoursEnabled,
+                    trailing = {
+                        CupertinoSwitch(
                             checked = isQuietHoursEnabled,
-                            onCheckedChange = viewModel::setQuietHoursEnabled
+                            onCheckedChange = viewModel::setQuietHoursEnabled,
+                            activeColor = ApplePurple
                         )
                     }
+                )
 
-                    if (isQuietHoursEnabled) {
-                        val formatTime: (Int, Int) -> String = { h, m ->
-                            val ampm = if (h >= 12) "PM" else "AM"
-                            val displayH = when {
-                                h == 0 -> 12
-                                h > 12 -> h - 12
-                                else -> h
-                            }
-                            String.format("%02d:%02d %s", displayH, m, ampm)
+                if (isQuietHoursEnabled) {
+                    val formatTime: (Int, Int) -> String = { h, m ->
+                        val ampm = if (h >= 12) "PM" else "AM"
+                        val displayH = when {
+                            h == 0 -> 12
+                            h > 12 -> h - 12
+                            else -> h
                         }
+                        String.format("%02d:%02d %s", displayH, m, ampm)
+                    }
 
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = "Active Range: ${formatTime(startHour, startMinute)} → ${formatTime(endHour, endMinute)}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "During this window, Sieve will not dismiss any notification.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        // Presets
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp)
+                    ) {
                         Text(
-                            text = "Quick Presets",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Schedule: ${formatTime(startHour, startMinute)} → ${formatTime(endHour, endMinute)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = ApplePurple
                         )
+                        Spacer(modifier = Modifier.height(10.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            OutlinedButton(
-                                onClick = { viewModel.setQuietHours(22, 0, 7, 0) },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(AppleCardSecondary)
+                                    .clickable { viewModel.setQuietHours(22, 0, 7, 0) }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text("Night (10pm-7am)", style = MaterialTheme.typography.labelSmall)
+                                Text(
+                                    text = "Night (10pm - 7am)",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = AppleTextPrimary
+                                )
                             }
-                            OutlinedButton(
-                                onClick = { viewModel.setQuietHours(23, 0, 8, 0) },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(AppleCardSecondary)
+                                    .clickable { viewModel.setQuietHours(23, 0, 8, 0) }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text("Late (11pm-8am)", style = MaterialTheme.typography.labelSmall)
+                                Text(
+                                    text = "Late (11pm - 8am)",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = AppleTextPrimary
+                                )
                             }
                         }
                     }
@@ -852,266 +318,302 @@ fun SettingsScreen(
             }
         }
 
-        // Section: Log Retention Policy (Auto-Prune)
+        // 3. Group: SYSTEM PERMISSIONS & HEALTH
         item {
-            Text(
-                text = "Storage & Retention",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-                modifier = Modifier.fillMaxWidth()
+            CupertinoInsetGroup(
+                title = "System Diagnostics & Listener",
+                footer = "Android requires Notification Listener permission and unrestricted battery background operation to shield notifications."
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+                // Notification Access
+                CupertinoGroupedRow(
+                    title = "Notification Access",
+                    subtitle = if (isPermissionGranted) "Granted in Android system settings" else "Permission missing — Sieve cannot intercept notifications",
+                    icon = if (isPermissionGranted) Icons.Default.CheckCircle else Icons.Default.Error,
+                    iconBg = if (isPermissionGranted) AppleGreen else AppleRed,
+                    onClick = {
+                        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                        context.startActivity(intent)
+                    },
+                    trailing = {
+                        CupertinoBadge(
+                            text = if (isPermissionGranted) "Active" else "Grant Access",
+                            color = if (isPermissionGranted) AppleGreen else AppleRed
+                        )
+                    }
+                )
+
+                // Battery Optimization
+                CupertinoGroupedRow(
+                    title = "Background Battery Exemption",
+                    subtitle = if (isBatteryIgnored) "Unrestricted — OS will not terminate background listener" else "OS may kill listener in deep sleep",
+                    icon = Icons.Default.BatterySaver,
+                    iconBg = if (isBatteryIgnored) AppleGreen else AppleOrange,
+                    onClick = {
+                        if (!isBatteryIgnored && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            try {
+                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = Uri.parse("package:${context.packageName}")
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                context.startActivity(intent)
+                            }
+                        }
+                    },
+                    trailing = {
+                        CupertinoBadge(
+                            text = if (isBatteryIgnored) "Optimal" else "Exempt",
+                            color = if (isBatteryIgnored) AppleGreen else AppleOrange
+                        )
+                    }
+                )
+
+                // Service Daemon Binding
+                CupertinoGroupedRow(
+                    title = "Notification Listener Daemon",
+                    subtitle = if (isListening) "Service bound and actively processing notifications" else "Service connection standby",
+                    icon = Icons.Default.Security,
+                    iconBg = if (isListening) AppleGreen else AppleOrange,
+                    onClick = viewModel::triggerRebind,
+                    trailing = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CupertinoBadge(
+                                text = if (isListening) "Connected" else "Rebind",
+                                color = if (isListening) AppleGreen else AppleOrange
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Rebind",
+                                tint = AppleTextTertiary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                )
+
+                // OEM Kill Guide
+                CupertinoGroupedRow(
+                    title = "OEM Optimization (${oem.brandName})",
+                    subtitle = if (oem.isKnownAggressive) "Aggressive background killing detected. Tap to view guide." else "Standard Android background management",
+                    icon = Icons.Default.Info,
+                    iconBg = if (oem.isKnownAggressive) AppleOrange else AppleBlue,
+                    showDivider = false,
+                    onClick = {
+                        try {
+                            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(oem.dontKillMyAppUrl))
+                            context.startActivity(browserIntent)
+                        } catch (_: Exception) {}
+                    },
+                    trailing = {
+                        Icon(
+                            imageVector = Icons.Default.OpenInBrowser,
+                            contentDescription = null,
+                            tint = AppleTextTertiary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                )
+            }
+        }
+
+        // 4. Group: DISPLAY & POWER
+        item {
+            CupertinoInsetGroup(
+                title = "Display & Power"
+            ) {
+                CupertinoGroupedRow(
+                    title = "True Black OLED Mode",
+                    subtitle = "Pure #000000 background shuts off OLED subpixels for infinite contrast and battery efficiency",
+                    icon = Icons.Default.DarkMode,
+                    iconBg = AppleBlue,
+                    showDivider = false,
+                    trailing = {
+                        CupertinoSwitch(
+                            checked = isAmoledBlackMode,
+                            onCheckedChange = viewModel::setAmoledBlackMode,
+                            activeColor = AppleBlue
+                        )
+                    }
+                )
+            }
+        }
+
+        // 5. Group: STORAGE & LOG RETENTION
+        item {
+            CupertinoInsetGroup(
+                title = "Storage & Auto-Pruning",
+                footer = "Automatically purges old block log entries to keep the SQLite database lightweight."
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = "Auto-Prune Retention Period",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
+                        text = "Log Retention Policy",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = AppleTextPrimary
                     )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    val retentionOptions = listOf(7, 14, 30, -1)
+                    val selectedIndex = retentionOptions.indexOf(logRetentionDays).coerceAtLeast(0)
+                    CupertinoSegmentedControl(
+                        items = listOf("7 Days", "14 Days", "30 Days", "Keep All"),
+                        selectedIndex = selectedIndex,
+                        onItemSelected = { index ->
+                            viewModel.setLogRetentionDays(retentionOptions[index])
+                        }
+                    )
+                }
+            }
+        }
+
+        // 6. Group: DATA & RULES MANAGEMENT
+        item {
+            CupertinoInsetGroup(
+                title = "Data & Rules Management"
+            ) {
+                // Export Rules JSON
+                CupertinoGroupedRow(
+                    title = "Export Filter Rules (JSON)",
+                    subtitle = "Backup your custom keyword rules to a portable JSON file",
+                    icon = Icons.Default.FileDownload,
+                    iconBg = AppleBlue,
+                    onClick = {
+                        coroutineScope.launch {
+                            exportedJsonText = viewModel.exportRulesJson()
+                            showExportDialog = true
+                        }
+                    }
+                )
+
+                // Import Rules JSON
+                CupertinoGroupedRow(
+                    title = "Import Filter Rules (JSON)",
+                    subtitle = "Restore or merge rules from a JSON backup",
+                    icon = Icons.Default.FileUpload,
+                    iconBg = AppleBlue,
+                    onClick = {
+                        importJsonText = ""
+                        showImportDialog = true
+                    }
+                )
+
+                // Export Block Log CSV
+                CupertinoGroupedRow(
+                    title = "Export Interception Log (CSV)",
+                    subtitle = "Export all blocked notification records to a spreadsheet",
+                    icon = Icons.Default.TableChart,
+                    iconBg = AppleGreen,
+                    onClick = {
+                        coroutineScope.launch {
+                            exportedCsvText = viewModel.exportLogsCsv()
+                            showExportCsvDialog = true
+                        }
+                    }
+                )
+
+                // Reset Default Keywords
+                CupertinoGroupedRow(
+                    title = "Restore Curated Default Rules",
+                    subtitle = "Reverts keyword rules to the curated high-accuracy default set",
+                    icon = Icons.Default.RestartAlt,
+                    iconBg = AppleOrange,
+                    onClick = { showResetDialog = true }
+                )
+
+                // Clear Block History
+                CupertinoGroupedRow(
+                    title = "Clear Interception History",
+                    subtitle = "Permanently deletes all historical notification log records from SQLite",
+                    icon = Icons.Default.DeleteSweep,
+                    iconBg = AppleRed,
+                    showDivider = false,
+                    onClick = { showClearLogsDialog = true }
+                )
+            }
+        }
+
+        // 7. Group: ABOUT & PRIVACY ARCHITECTURE
+        item {
+            CupertinoInsetGroup(
+                title = "About Sieve Sentinel"
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(AppleGreen.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Security,
+                                contentDescription = null,
+                                tint = AppleGreen,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Sieve v1.4.0 (Cupertino Sentinel)",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = AppleTextPrimary
+                            )
+                            Text(
+                                text = "Zero Telemetry • No Internet Permission",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AppleGreen,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
                     Text(
-                        text = "Automatically purges old logs to keep the SQLite database small and fast.",
+                        text = "Sieve operates 100% on your device. The android.permission.INTERNET flag is not declared in the Android manifest, guaranteeing that your notification data cannot ever leak or leave your hardware.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = AppleTextSecondary,
+                        lineHeight = 18.sp
                     )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(thickness = 0.5.dp, color = AppleSeparator)
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        listOf(7, 14, 30, -1).forEach { days ->
-                            val label = if (days == -1) "All" else "${days}d"
-                            val isSelected = logRetentionDays == days
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { viewModel.setLogRetentionDays(days) },
-                                label = { Text(label) }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Section: Data, Rules & Backup
-        item {
-            Text(
-                text = "Rules & Data Management",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(8.dp)) {
-                    // Export JSON
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                coroutineScope.launch {
-                                    exportedJsonText = viewModel.exportRulesJson()
-                                    showExportDialog = true
-                                }
-                            }
-                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.FileDownload,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Export Rules (Backup JSON)",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "Export all keyword rules to a portable JSON backup",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Import JSON
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                importJsonText = ""
-                                showImportDialog = true
-                            }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FileUpload,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Import Rules (Restore JSON)",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "Import or paste keyword rules from a JSON backup",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Export CSV
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                coroutineScope.launch {
-                                    exportedCsvText = viewModel.exportLogsCsv()
-                                    showExportCsvDialog = true
-                                }
-                            }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.TableChart,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Export Block Log (CSV)",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "Export history to a CSV spreadsheet format",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Reset Default Keywords
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showResetDialog = true }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.RestartAlt,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Restore Default Keywords",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "Resets keyword rules back to the curated default set",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Clear Block History
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showClearLogsDialog = true }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteSweep,
-                            contentDescription = null,
-                            tint = BlockRed,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Clear Block History",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = BlockRed
-                            )
-                            Text(
-                                text = "Deletes all historical notification records from SQLite",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Section: Privacy & About
-        item {
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Privacy & Zero-Telemetry Architecture",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+                            text = "Engine: Room 2.6.1 + Compose M3",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AppleTextTertiary
                         )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(AppleBlue.copy(alpha = 0.12f))
+                                .clickable {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ArushSengar/Sieve"))
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {}
+                                }
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "GitHub Repository ↗",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppleBlue
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Sieve operates 100% on your device. The INTERNET permission is not declared in the Android manifest, ensuring zero notification data can ever leave your phone.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Sieve v1.0.0 • SQLite Room • In-Memory Cache • Jetpack Compose",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
                 }
             }
         }
@@ -1121,49 +623,122 @@ fun SettingsScreen(
     if (showExportDialog) {
         AlertDialog(
             onDismissRequest = { showExportDialog = false },
-            icon = { Icon(imageVector = Icons.Default.FileDownload, contentDescription = null) },
-            title = { Text("Export Rules (JSON)") },
+            containerColor = AppleCardElevated,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text(
+                    text = "Export Rules (JSON)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppleTextPrimary
+                )
+            },
             text = {
                 Column {
                     Text(
-                        text = "Your keyword rules in JSON format. You can copy this to clipboard for backup or sharing.",
+                        text = "Your keyword rules in JSON format. Copy this to clipboard for backup or sharing.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = AppleTextSecondary
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(160.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(AppleCardSecondary)
+                            .padding(10.dp)
                     ) {
                         Text(
                             text = exportedJsonText,
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(10.dp)
+                            color = AppleTextPrimary
                         )
                     }
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        clipboardManager.setText(AnnotatedString(exportedJsonText))
-                        coroutineScope.launch {
-                            snackbarHostState?.showSnackbar("Rules copied to clipboard!")
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AppleBlue)
+                        .clickable {
+                            clipboardManager.setText(AnnotatedString(exportedJsonText))
+                            showExportDialog = false
                         }
-                        showExportDialog = false
-                    }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Copy to Clipboard")
+                    Text("Copy to Clipboard", color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showExportDialog = false }) {
-                    Text("Close")
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showExportDialog = false }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("Close", color = AppleTextSecondary)
+                }
+            }
+        )
+    }
+
+    // Dialog: Import Rules JSON
+    if (showImportDialog) {
+        AlertDialog(
+            onDismissRequest = { showImportDialog = false },
+            containerColor = AppleCardElevated,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text(
+                    text = "Import Rules (JSON)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppleTextPrimary
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Paste your exported JSON rules below:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppleTextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = importJsonText,
+                        onValueChange = { importJsonText = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        placeholder = { Text("Paste JSON here...") }
+                    )
+                }
+            },
+            confirmButton = {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AppleBlue)
+                        .clickable {
+                            viewModel.importRulesJson(importJsonText)
+                            showImportDialog = false
+                        }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("Import Rules", color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showImportDialog = false }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("Cancel", color = AppleTextSecondary)
                 }
             }
         )
@@ -1173,145 +748,158 @@ fun SettingsScreen(
     if (showExportCsvDialog) {
         AlertDialog(
             onDismissRequest = { showExportCsvDialog = false },
-            icon = { Icon(imageVector = Icons.Default.TableChart, contentDescription = null) },
-            title = { Text("Export Block Log (CSV)") },
+            containerColor = AppleCardElevated,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text(
+                    text = "Export Logs (CSV)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppleTextPrimary
+                )
+            },
             text = {
                 Column {
                     Text(
-                        text = "CSV formatted export of dismissed notifications. Ready to copy:",
+                        text = "Your blocked notification log in CSV spreadsheet format:",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = AppleTextSecondary
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(160.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(AppleCardSecondary)
+                            .padding(10.dp)
                     ) {
                         Text(
-                            text = exportedCsvText.take(1000) + if (exportedCsvText.length > 1000) "\n..." else "",
+                            text = exportedCsvText,
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(10.dp)
+                            color = AppleTextPrimary
                         )
                     }
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        clipboardManager.setText(AnnotatedString(exportedCsvText))
-                        coroutineScope.launch {
-                            snackbarHostState?.showSnackbar("CSV copied to clipboard!")
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AppleGreen)
+                        .clickable {
+                            clipboardManager.setText(AnnotatedString(exportedCsvText))
+                            showExportCsvDialog = false
                         }
-                        showExportCsvDialog = false
-                    }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Copy CSV")
+                    Text("Copy CSV", color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showExportCsvDialog = false }) {
-                    Text("Close")
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showExportCsvDialog = false }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("Close", color = AppleTextSecondary)
                 }
             }
         )
     }
 
-    // Dialog: Import Rules
-    if (showImportDialog) {
-        AlertDialog(
-            onDismissRequest = { showImportDialog = false },
-            icon = { Icon(imageVector = Icons.Default.FileUpload, contentDescription = null) },
-            title = { Text("Import Rules (JSON)") },
-            text = {
-                Column {
-                    Text(
-                        text = "Paste a JSON rule backup below to import keyword rules into Sieve:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField(
-                        value = importJsonText,
-                        onValueChange = { importJsonText = it },
-                        placeholder = { Text("{\"rules\": [{\"pattern\": \"promo\", \"action\": \"BLOCK\"}]}") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(140.dp)
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (importJsonText.isNotBlank()) {
-                            viewModel.importRulesJson(importJsonText.trim())
-                            showImportDialog = false
-                        }
-                    },
-                    enabled = importJsonText.isNotBlank()
-                ) {
-                    Text("Import Rules")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showImportDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    // Confirmation Dialog: Reset Keywords
+    // Dialog: Reset Defaults Confirmation
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
-            icon = { Icon(imageVector = Icons.Default.RestartAlt, contentDescription = null) },
-            title = { Text("Restore Default Keywords?") },
-            text = { Text("This will overwrite your existing keyword rules with Sieve's default curated rule list.") },
+            containerColor = AppleCardElevated,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text(
+                    text = "Reset Default Rules?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppleTextPrimary
+                )
+            },
+            text = {
+                Text(
+                    text = "This will restore the curated default keyword filter rules. Custom keyword rules will be replaced.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppleTextSecondary
+                )
+            },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.resetDefaultKeywords()
-                        showResetDialog = false
-                    }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AppleOrange)
+                        .clickable {
+                            viewModel.resetDefaultKeywords()
+                            showResetDialog = false
+                        }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
-                    Text("Restore")
+                    Text("Restore Defaults", color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showResetDialog = false }) {
-                    Text("Cancel")
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showResetDialog = false }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("Cancel", color = AppleTextSecondary)
                 }
             }
         )
     }
 
-    // Confirmation Dialog: Clear History
+    // Dialog: Clear Logs Confirmation
     if (showClearLogsDialog) {
         AlertDialog(
             onDismissRequest = { showClearLogsDialog = false },
-            icon = { Icon(imageVector = Icons.Default.DeleteSweep, contentDescription = null, tint = BlockRed) },
-            title = { Text("Clear Block History?") },
-            text = { Text("All dismissed notification records will be permanently removed.") },
+            containerColor = AppleCardElevated,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text(
+                    text = "Clear All Block History?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppleRed
+                )
+            },
+            text = {
+                Text(
+                    text = "This permanently removes all intercepted notification logs from local storage. This action cannot be undone.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppleTextSecondary
+                )
+            },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.clearAllLogs()
-                        showClearLogsDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = BlockRed)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AppleRed)
+                        .clickable {
+                            viewModel.clearAllLogs()
+                            showClearLogsDialog = false
+                        }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
-                    Text("Clear All")
+                    Text("Delete Everything", color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearLogsDialog = false }) {
-                    Text("Cancel")
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showClearLogsDialog = false }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("Cancel", color = AppleTextSecondary)
                 }
             }
         )

@@ -343,9 +343,11 @@ class SieveNotificationListenerService : NotificationListenerService() {
         }
 
         // 7. Anti-Flooding Deduplication (STRICTLY SCOPED TO MARKETING/PROMO APPS)
-        // Never deduplicate communication apps (WhatsApp, Discord, Truecaller) or message/call categories.
+        // Never deduplicate communication apps (WhatsApp, SMS, Truecaller), banking/UPI apps, or message/call categories.
+        // Never deduplicate transactional, security, OTP, or transit notifications.
         // Never deduplicate during active shade sweeping.
-        if (!isSweep && !isCommunicationApp && !isProtectedCategory && prefs.isDeduplicationEnabled.value && !title.isNullOrBlank()) {
+        val isSafeContent = SmartAiClassifier.isGuaranteedSafe(title, text, subText)
+        if (!isSweep && !isCommunicationApp && !isProtectedCategory && !isSafeContent && prefs.isDeduplicationEnabled.value && !title.isNullOrBlank()) {
             val dedupKey = "$packageName|${title.trim()}|${text?.trim() ?: ""}"
             val now = System.currentTimeMillis()
             val isDuplicate = synchronized(recentNotificationTimestamps) {
@@ -472,16 +474,21 @@ class SieveNotificationListenerService : NotificationListenerService() {
         private const val TAG = "SieveFilter"
         private const val DEDUP_WINDOW_MS = 10 * 60 * 1000L // 10 minutes
 
-        // Communication packages that must NEVER be deduplicated or blocked by flood detection
+        // Communication & Essential packages that must NEVER be deduplicated or blocked by flood detection
         val PROTECTED_COMMUNICATION_PACKAGES = setOf(
+            // Messaging & Social
             "com.whatsapp",
             "com.whatsapp.w4b",
             "org.telegram.messenger",
             "org.thoughtcrime.securesms", // Signal
             "com.google.android.apps.messaging",
-            "com.google.android.dialer",
             "com.samsung.android.messaging",
-            "com.samsung.android.dialer",
+            "com.oneplus.mms",
+            "com.coloros.mms",
+            "com.oppo.mms",
+            "com.xiaomi.mms",
+            "com.vivo.mms",
+            "com.android.mms",
             "com.truecaller",
             "com.discord",
             "com.google.android.gm",
@@ -490,7 +497,39 @@ class SieveNotificationListenerService : NotificationListenerService() {
             "com.slack",
             "com.skype.raider",
             "com.facebook.orca", // Messenger
-            "com.instagram.android"
+            "com.instagram.android",
+
+            // Dialers & In-Call UI
+            "com.google.android.dialer",
+            "com.samsung.android.dialer",
+            "com.oneplus.dialer",
+            "com.coloros.dialer",
+            "com.oppo.dialer",
+            "com.xiaomi.dialer",
+            "com.vivo.dialer",
+            "com.android.dialer",
+            "com.android.incallui",
+
+            // Banking & UPI Apps
+            "com.google.android.apps.nbu.paisa.user", // Google Pay
+            "com.phonepe.app",
+            "net.one97.paytm",
+            "in.org.npci.upiapp", // BHIM
+            "com.dreamplug.androidapp", // CRED
+            "com.csam.icici.bank.imobile",
+            "com.hdfcbank.netbanking",
+            "com.sbi.lotusintouch",
+            "com.axis.mobile",
+            "com.kotak.mbusiness",
+            "com.msf.kbank.mobile",
+            "com.bankofbaroda.mconnect",
+            "com.punjabnationalbank.pnbmbanking",
+            "com.canarabank.mobility",
+            "com.unionbank.challan",
+            "com.indusind.indusmobile",
+            "com.fedmobile",
+            "com.rblbank.mobank",
+            "com.idfcfirstbank.optimus"
         )
 
         // Notification categories that must NEVER be touched by flood detection

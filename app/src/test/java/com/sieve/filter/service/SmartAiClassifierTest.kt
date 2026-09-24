@@ -486,6 +486,65 @@ class SmartAiClassifierTest {
 
         assertFalse("Flipkart transactional order notifications must NEVER be blocked", result.isSpam)
     }
+
+    @Test
+    fun testPhonePePaymentReceived_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.phonepe.app",
+            title = "PhonePe",
+            text = "Payment received of ₹250 from Alice Sharma. UPI Ref: 123456789"
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("PhonePe peer payment notification must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testPaytmUpiReceived_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "net.one97.paytm",
+            title = "Paytm Payments Bank",
+            text = "Received ₹1,000 from Bob via Paytm UPI. Acc ending in 9876."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Paytm UPI money transfer must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testBankSmsDebitCredit_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.oneplus.mms",
+            title = "VK-HDFCBK",
+            text = "Rs. 1,500.00 debited from A/c ending 1122 on 24-Sep-26. Info: UPI/426812/Swiggy. Avl Bal: Rs. 24,190.50"
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Bank transaction SMS must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testHindiSpinWinGamblingBait_DetectedAsSpam() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.winzo.gold",
+            title = "स्पिन करें और 10,000 रुपये जीतें",
+            text = "आज का लकी स्पिन अभी क्लेम करें और नकद इनाम पाएं!"
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertTrue("Hindi gambling spin & win bait must be flagged as spam", result.isSpam)
+    }
+
+    @Test
+    fun testPreApprovedPersonalLoanBait_DetectedAsSpam() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.naviapp",
+            title = "Congratulations! Instant Loan Approved",
+            text = "Pre-approved personal loan of ₹5,00,000 waiting in your account. Tap to apply now!"
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertTrue("Instant pre-approved loan bait must be flagged as spam", result.isSpam)
+        assertEquals(AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT, result.category)
+    }
 }
 
 

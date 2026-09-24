@@ -563,16 +563,9 @@ object SmartAiClassifier {
         val combinedContent = normalizeSpamText(rawCombined)
 
         // Safety check: Never flag transactional, security, or delivery notifications
-        for (safe in SAFE_PATTERNS) {
-            if (combinedContent.contains(safe)) {
-                return AiResult(isSpam = false, reason = "Matched safety guard '$safe'")
-            }
-        }
-
-        // Robust regex check for peer-to-peer / merchant transactional payments (e.g. "NAVEEN KUMAR paid you ₹501.00")
-        val upiPaymentRegex = Regex("(?:paid|sent|transferred|credited|received)\\s+(?:you\\s+)?(?:[₹rs]\\.?\\s*\\d+|\\d+\\s*[₹rs])", RegexOption.IGNORE_CASE)
-        if (upiPaymentRegex.containsMatchIn(rawCombined)) {
-            return AiResult(isSpam = false, reason = "Legitimate financial payment transaction detected")
+        val safeCheck = checkGuaranteedSafe(rawCombined, combinedContent)
+        if (safeCheck != null) {
+            return AiResult(isSpam = false, reason = safeCheck)
         }
 
         // Check 1: Clickbait / Lottery Bait (prioritized to catch task-based clickbait before raw currency triggers)
@@ -799,5 +792,34 @@ object SmartAiClassifier {
         }
 
         return defaultLabel
+    }
+
+    private val UPI_PAYMENT_REGEX = Regex("(?:paid|sent|transferred|credited|received)\\s+(?:you\\s+)?(?:[₹rs]\\.?\\s*\\d+|\\d+\\s*[₹rs])", RegexOption.IGNORE_CASE)
+
+    private fun checkGuaranteedSafe(raw: String, normalized: String): String? {
+        for (safe in SAFE_PATTERNS) {
+            if (normalized.contains(safe)) {
+                return "Matched safety guard '$safe'"
+            }
+        }
+        if (UPI_PAYMENT_REGEX.containsMatchIn(raw)) {
+            return "Legitimate financial payment transaction detected"
+        }
+        return null
+    }
+
+    /**
+     * Public safety validator to ensure banking, UPI, OTPs, and transit updates
+     * are never dropped by anti-flooding deduplication or auxiliary filters.
+     */
+    fun isGuaranteedSafe(title: String?, text: String?, subText: String? = null): Boolean {
+        val rawCombined = buildString {
+            if (!title.isNullOrBlank()) append(title).append(" ")
+            if (!text.isNullOrBlank()) append(text).append(" ")
+            if (!subText.isNullOrBlank()) append(subText)
+        }.trim()
+        if (rawCombined.isEmpty()) return false
+        val normalized = normalizeSpamText(rawCombined)
+        return checkGuaranteedSafe(rawCombined, normalized) != null
     }
 }

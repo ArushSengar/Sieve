@@ -128,6 +128,7 @@ fun SettingsScreen(
     var showExportDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
     var showExportCsvDialog by remember { mutableStateOf(false) }
+    var showOemDialog by remember { mutableStateOf(false) }
     var exportedJsonText by remember { mutableStateOf("") }
     var exportedCsvText by remember { mutableStateOf("") }
     var importJsonText by remember { mutableStateOf("") }
@@ -396,22 +397,15 @@ fun SettingsScreen(
                 // OEM Kill Guide
                 CupertinoGroupedRow(
                     title = "OEM Optimization (${oem.brandName})",
-                    subtitle = if (oem.isKnownAggressive) "Aggressive background killing detected. Tap to view guide." else "Standard Android background management",
+                    subtitle = if (oem.isKnownAggressive) "Aggressive background killing detected. Tap for device guide." else "Standard Android background management",
                     icon = Icons.Default.Info,
                     iconBg = if (oem.isKnownAggressive) AppleOrange else AppleBlue,
                     showDivider = false,
-                    onClick = {
-                        try {
-                            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(oem.dontKillMyAppUrl))
-                            context.startActivity(browserIntent)
-                        } catch (_: Exception) {}
-                    },
+                    onClick = { showOemDialog = true },
                     trailing = {
-                        Icon(
-                            imageVector = Icons.Default.OpenInBrowser,
-                            contentDescription = null,
-                            tint = AppleTextTertiary,
-                            modifier = Modifier.size(18.dp)
+                        CupertinoBadge(
+                            text = if (oem.isKnownAggressive) "Guide" else "View",
+                            color = if (oem.isKnownAggressive) AppleOrange else AppleBlue
                         )
                     }
                 )
@@ -900,6 +894,79 @@ fun SettingsScreen(
                         .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Text("Cancel", color = AppleTextSecondary)
+                }
+            }
+        )
+    }
+
+    // Dialog: OEM Optimization Guidance
+    if (showOemDialog) {
+        AlertDialog(
+            onDismissRequest = { showOemDialog = false },
+            containerColor = AppleCardElevated,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text(
+                    text = "${oem.brandName} Background Guide",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppleTextPrimary
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = if (oem.isKnownAggressive) {
+                            "This device's manufacturer aggressively terminates background services. To ensure Sieve never stops filtering notifications:"
+                        } else {
+                            "Ensure Android allows Sieve to run unrestricted in the background:"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppleTextSecondary,
+                        lineHeight = 16.sp
+                    )
+                    oem.instructions.forEachIndexed { idx, step ->
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "${idx + 1}. ",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = AppleOrange
+                            )
+                            Text(
+                                text = step,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppleTextPrimary,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AppleBlue)
+                        .clickable { showOemDialog = false }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("Done", color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            try {
+                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(oem.dontKillMyAppUrl))
+                                context.startActivity(browserIntent)
+                            } catch (_: Exception) {}
+                        }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("More Online", color = AppleTextSecondary)
                 }
             }
         )

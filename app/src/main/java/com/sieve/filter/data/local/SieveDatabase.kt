@@ -161,12 +161,28 @@ abstract class SieveDatabase : RoomDatabase() {
             "refund processed",
             "return pickup",
             "paid to",
+            "paid you",
+            "sent you",
+            "transferred to",
+            "credited to",
+            "credited with",
+            "debited from",
+            "payment received",
             "received from",
             "money sent",
             "money received",
+            "bhim upi",
             "upi ref",
+            "upi reference",
+            "acct ending",
+            "a/c ending",
+            "txn id",
+            "transaction successful",
+            "payment successful",
             "रुपये भेजे गए",
-            "रुपये प्राप्त हुए"
+            "रुपये प्राप्त हुए",
+            "खाते से काटे गए",
+            "खाते में जमा"
         )
     }
 

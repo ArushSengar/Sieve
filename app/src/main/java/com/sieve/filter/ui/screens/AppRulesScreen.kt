@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -187,32 +188,24 @@ fun AppRulesScreen(
                     }
                 }
             } else {
-                // 5. Inset Grouped Table Container
-                item {
+                // 5. Virtualized Cupertino App Rule Cards
+                items(
+                    items = filteredApps,
+                    key = { it.packageName }
+                ) { app ->
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(AppleCard)
-                            .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(20.dp))
+                            .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(16.dp))
                     ) {
-                        Column {
-                            filteredApps.forEachIndexed { index, app ->
-                                CupertinoAppRuleRow(
-                                    app = app,
-                                    onModeSelected = { mode ->
-                                        viewModel.setAppMode(app.packageName, mode)
-                                    }
-                                )
-                                if (index < filteredApps.size - 1) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(start = 66.dp),
-                                        thickness = 0.5.dp,
-                                        color = AppleSeparator
-                                    )
-                                }
+                        CupertinoAppRuleRow(
+                            app = app,
+                            onModeSelected = { mode ->
+                                viewModel.setAppMode(app.packageName, mode)
                             }
-                        }
+                        )
                     }
                 }
             }

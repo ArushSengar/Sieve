@@ -84,69 +84,166 @@ fun PermissionBanner(
         }
     }
 
+    var showRestrictedHelp by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxWidth()) {
         AnimatedVisibility(
             visible = !isGranted,
             enter = expandVertically(),
             exit = shrinkVertically()
         ) {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(AppleCard)
-                    .border(width = 0.5.dp, color = AppleOrange.copy(alpha = 0.4f), shape = RoundedCornerShape(18.dp))
-                    .clickable {
-                        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                        context.startActivity(intent)
-                    }
-                    .padding(14.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(AppleOrange.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(AppleCard)
+                        .border(width = 0.5.dp, color = AppleOrange.copy(alpha = 0.4f), shape = RoundedCornerShape(18.dp))
+                        .clickable {
+                            val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                            context.startActivity(intent)
+                        }
+                        .padding(14.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(AppleOrange.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = AppleOrange,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Notification Access Required",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = AppleTextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Tap to grant listener access in Android Settings so Sieve can filter spam.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AppleTextSecondary,
+                                lineHeight = 15.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
                         Icon(
-                            imageVector = Icons.Default.Warning,
+                            imageVector = Icons.Default.ChevronRight,
                             contentDescription = null,
                             tint = AppleOrange,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
+                }
 
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
+                // Android 13/14+ Sideload Restricted Setting Helper
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showRestrictedHelp = true }
+                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
                         Text(
-                            text = "Notification Access Required",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AppleTextPrimary
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Tap to grant listener access in Android Settings so Sieve can filter spam.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = AppleTextSecondary,
-                            lineHeight = 15.sp
+                            text = "Setting greyed out or restricted? Tap for 30s unlock guide",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            color = com.sieve.filter.ui.theme.AppleBlue,
+                            fontWeight = FontWeight.Medium
                         )
                     }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = AppleOrange,
-                        modifier = Modifier.size(18.dp)
-                    )
                 }
             }
         }
+    }
+
+    if (showRestrictedHelp) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showRestrictedHelp = false },
+            title = {
+                Text(
+                    text = "Restricted Setting Unlock",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppleTextPrimary
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "On Android 13 & 14+, sideloaded apps have permission switches greyed out by default. To unlock it:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppleTextSecondary,
+                        lineHeight = 16.sp
+                    )
+                    Text(
+                        text = "1. Tap 'Open Sieve App Info' below.",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppleTextPrimary
+                    )
+                    Text(
+                        text = "2. Tap the three dots (⋮) in the top-right corner.",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppleTextPrimary
+                    )
+                    Text(
+                        text = "3. Tap 'Allow restricted settings' and verify with PIN / Fingerprint.",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppleTextPrimary
+                    )
+                    Text(
+                        text = "4. Return to Sieve and grant Notification Access.",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppleTextPrimary
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        showRestrictedHelp = false
+                        try {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = android.net.Uri.parse("package:${context.packageName}")
+                            }
+                            context.startActivity(intent)
+                        } catch (_: Exception) {}
+                    }
+                ) {
+                    Text("Open Sieve App Info", color = com.sieve.filter.ui.theme.AppleBlue, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showRestrictedHelp = false }) {
+                    Text("Dismiss", color = AppleTextSecondary)
+                }
+            },
+            containerColor = AppleCard,
+            shape = RoundedCornerShape(20.dp)
+        )
     }
 }

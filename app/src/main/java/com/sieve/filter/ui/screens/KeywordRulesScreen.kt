@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -281,29 +282,22 @@ fun KeywordRulesScreen(
                         }
                     }
                 } else {
-                    item {
+                    // Virtualized Cupertino Keyword Rule Cards
+                    items(
+                        items = rules,
+                        key = { it.id }
+                    ) { rule ->
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(20.dp))
+                                .clip(RoundedCornerShape(16.dp))
                                 .background(AppleCard)
-                                .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(20.dp))
+                                .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(16.dp))
                         ) {
-                            Column {
-                                rules.forEachIndexed { index, rule ->
-                                    CupertinoKeywordRuleRow(
-                                        rule = rule,
-                                        onDelete = { viewModel.deleteRule(rule.id) }
-                                    )
-                                    if (index < rules.size - 1) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(start = 58.dp),
-                                            thickness = 0.5.dp,
-                                            color = AppleSeparator
-                                        )
-                                    }
-                                }
-                            }
+                            CupertinoKeywordRuleRow(
+                                rule = rule,
+                                onDelete = { viewModel.deleteRule(rule.id) }
+                            )
                         }
                     }
                 }

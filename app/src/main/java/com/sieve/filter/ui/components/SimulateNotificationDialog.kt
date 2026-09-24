@@ -1,7 +1,14 @@
 package com.sieve.filter.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -19,16 +27,9 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,20 +38,30 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.sieve.filter.SieveApplication
 import com.sieve.filter.model.AppRuleMode
 import com.sieve.filter.model.FilterDecision
 import com.sieve.filter.service.NotificationClassifier
+import com.sieve.filter.service.SieveNotificationListenerService
 import com.sieve.filter.service.SmartAiClassifier
-import com.sieve.filter.ui.theme.AiPurple
-import com.sieve.filter.ui.theme.AiPurpleBg
-import com.sieve.filter.ui.theme.AllowGreen
-import com.sieve.filter.ui.theme.AllowGreenBg
-import com.sieve.filter.ui.theme.BlockRed
-import com.sieve.filter.ui.theme.BlockRedBg
+import com.sieve.filter.ui.theme.AppleBlue
+import com.sieve.filter.ui.theme.AppleCardElevated
+import com.sieve.filter.ui.theme.AppleCardSecondary
+import com.sieve.filter.ui.theme.AppleGreen
+import com.sieve.filter.ui.theme.AppleHairline
+import com.sieve.filter.ui.theme.ApplePurple
+import com.sieve.filter.ui.theme.AppleRed
+import com.sieve.filter.ui.theme.AppleTextPrimary
+import com.sieve.filter.ui.theme.AppleTextSecondary
+import com.sieve.filter.ui.theme.AppleTextTertiary
 import kotlinx.coroutines.launch
 
 data class NotificationPreset(
@@ -58,72 +69,90 @@ data class NotificationPreset(
     val packageName: String,
     val title: String,
     val text: String,
-    val channelId: String
+    val channelId: String,
+    val isSpamExpected: Boolean
 )
 
 val PRESETS = listOf(
     NotificationPreset(
-        label = "super.money: Win iPhone 17 (AI Spam)",
-        packageName = "money.super.payments",
-        title = "Win an iPhone 17! 🤩 📱",
-        text = "Just apply for your superCard & become our top spender to win. Tap to apply now! 🚀",
-        channelId = "moe_default_channel"
+        label = "PhonePe: Paid You (Safe)",
+        packageName = "com.phonepe.app",
+        title = "Payment Received",
+        text = "Rahul Sharma paid you ₹1,500 via PhonePe UPI. Ref: UPI/938120.",
+        channelId = "transactions",
+        isSpamExpected = false
     ),
     NotificationPreset(
-        label = "Navi: Rs. 12 Cashback (AI Spam)",
-        packageName = "com.naviapp",
-        title = "Rs. 12.00 🎉",
-        text = "Congratulations! Get 𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸 on your prepaid recharge.",
-        channelId = "navi.channel"
-    ),
-    NotificationPreset(
-        label = "Jar: Save ₹10 Target (AI Spam)",
-        packageName = "com.mysave.jar",
-        title = "Save ₹10 to reach the target",
-        text = "You are very close! Add ₹10 now.",
-        channelId = "savings_nudges"
-    ),
-    NotificationPreset(
-        label = "Truecaller: VIP Rewards (AI Spam)",
-        packageName = "com.truecaller",
-        title = "New profile views you missed this week 25 p...",
-        text = "Introducing VIP Rewards 🎉 You're invited! Join now.",
-        channelId = "engagement_push"
-    ),
-    NotificationPreset(
-        label = "Bewakoof: Solid Joggers (AI Spam)",
-        packageName = "com.bewakoof.bewakoof",
-        title = "Solid Joggers, Plenty Of Colours",
-        text = "Build your rotation one colour at a time 👀",
-        channelId = "catalog_marketing"
-    ),
-    NotificationPreset(
-        label = "YouTube: Win ₹1 CRORE (AI Spam)",
-        packageName = "com.google.android.youtube",
-        title = "Google Gemini Fund My Crazy: Complete 1-Min Task & Win ₹1 CRORE 💰",
-        text = "DR abhishek.",
-        channelId = "recommendations"
-    ),
-    NotificationPreset(
-        label = "HDFC Bank: OTP (Keep)",
+        label = "HDFC Bank: OTP (Safe)",
         packageName = "com.hdfc.bank",
         title = "Transaction OTP",
         text = "Your OTP is 492810 for debit card txn of INR 1,200. Do not share.",
-        channelId = "transaction_alerts"
+        channelId = "transaction_alerts",
+        isSpamExpected = false
     ),
     NotificationPreset(
-        label = "Zomato: Delivered (Keep)",
-        packageName = "in.org.projecteka.zomato",
+        label = "WhatsApp: Message (Safe)",
+        packageName = "com.whatsapp",
+        title = "Mom",
+        text = "Reached home safely? Call me when free.",
+        channelId = "messages",
+        isSpamExpected = false
+    ),
+    NotificationPreset(
+        label = "Zomato: Delivered (Safe)",
+        packageName = "com.application.zomato",
         title = "Order Delivered!",
         text = "Your order from Burger King has been delivered. Enjoy your meal!",
-        channelId = "order_updates"
+        channelId = "order_updates",
+        isSpamExpected = false
     ),
     NotificationPreset(
-        label = "Uber: Ride Arriving (Keep)",
+        label = "Uber: Driver Arriving (Safe)",
         packageName = "com.ubercab",
         title = "Driver Arriving",
         text = "Your driver Ramesh in Swift Dzire (DL 1Y 9821) is arriving in 2 mins.",
-        channelId = "trip_status"
+        channelId = "trip_status",
+        isSpamExpected = false
+    ),
+    NotificationPreset(
+        label = "Flipkart: Flash Sale (Spam)",
+        packageName = "com.flipkart.android",
+        title = "⚡ Mega Flash Sale Live!",
+        text = "Flat 80% off on premium smartphones & electronics. Hurry, limited time offer!",
+        channelId = "promotions",
+        isSpamExpected = true
+    ),
+    NotificationPreset(
+        label = "super.money: Win iPhone 17 (Spam)",
+        packageName = "money.super.payments",
+        title = "Win an iPhone 17! 🤩 📱",
+        text = "Just apply for your superCard & become our top spender to win. Tap to apply now! 🚀",
+        channelId = "moe_default_channel",
+        isSpamExpected = true
+    ),
+    NotificationPreset(
+        label = "Dream11: Win ₹10 Lakhs (Spam)",
+        packageName = "com.dream11.app",
+        title = "🏏 Mega Contest Live! Win ₹10 Lakhs",
+        text = "Make your team now for IND vs AUS. Claim free ₹50 bonus cash!",
+        channelId = "marketing",
+        isSpamExpected = true
+    ),
+    NotificationPreset(
+        label = "MoneyView: Instant Loan (Spam)",
+        packageName = "com.whizdm.moneyview",
+        title = "Pre-approved Loan of ₹5,00,000!",
+        text = "Zero paperwork, instant disbursal in 2 mins. Tap to claim before expiry.",
+        channelId = "loan_promos",
+        isSpamExpected = true
+    ),
+    NotificationPreset(
+        label = "Navi: Cashback Bait (Spam)",
+        packageName = "com.naviapp",
+        title = "Rs. 12.00 🎉",
+        text = "Congratulations! Get 𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸 on your prepaid recharge.",
+        channelId = "navi.channel",
+        isSpamExpected = true
     )
 )
 
@@ -143,33 +172,59 @@ fun SimulateNotificationDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = AppleCardElevated,
+        shape = RoundedCornerShape(22.dp),
         title = {
-            Text(
-                text = "Simulate & Test Filter",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+            Column {
+                Text(
+                    text = "Simulate & Test Sentinel",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = AppleTextPrimary
+                )
+                Text(
+                    text = "Test notifications against live filters and AI heuristics",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppleTextSecondary
+                )
+            }
         },
         text = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Quick Presets:",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold
+                    text = "PRESET SCENARIOS",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppleTextTertiary,
+                    letterSpacing = 0.5.sp
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Horizontal Preset Chips
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     PRESETS.forEach { preset ->
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        val isSelected = packageName == preset.packageName && title == preset.title
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isSelected) AppleBlue.copy(alpha = 0.2f)
+                                    else AppleCardSecondary
+                                )
+                                .border(
+                                    width = 0.5.dp,
+                                    color = if (isSelected) AppleBlue else AppleHairline,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
                                 .clickable {
                                     packageName = preset.packageName
                                     title = preset.title
@@ -177,12 +232,13 @@ fun SimulateNotificationDialog(
                                     channelId = preset.channelId
                                     decisionResult = null
                                 }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
                                 text = preset.label,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) AppleBlue else AppleTextSecondary
                             )
                         }
                     }
@@ -190,88 +246,102 @@ fun SimulateNotificationDialog(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                OutlinedTextField(
+                // App Package Field
+                CupertinoSimulationInputField(
+                    label = "PACKAGE NAME",
                     value = packageName,
-                    onValueChange = { packageName = it },
-                    label = { Text("App Package") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    onValueChange = { packageName = it; decisionResult = null }
                 )
 
-                OutlinedTextField(
+                // Title Field
+                CupertinoSimulationInputField(
+                    label = "NOTIFICATION TITLE",
                     value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Title") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    onValueChange = { title = it; decisionResult = null }
                 )
 
-                OutlinedTextField(
+                // Text Field
+                CupertinoSimulationInputField(
+                    label = "CONTENT MESSAGE",
                     value = text,
-                    onValueChange = { text = it },
-                    label = { Text("Notification Content") },
-                    minLines = 2,
-                    modifier = Modifier.fillMaxWidth()
+                    onValueChange = { text = it; decisionResult = null },
+                    minLines = 2
                 )
 
-                OutlinedTextField(
+                // Channel Field
+                CupertinoSimulationInputField(
+                    label = "CHANNEL ID",
                     value = channelId,
-                    onValueChange = { channelId = it },
-                    label = { Text("Channel ID") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    onValueChange = { channelId = it; decisionResult = null }
                 )
 
-                // Decision result display
-                if (decisionResult != null) {
-                    val decision = decisionResult!!
-                    val isAi = decision.matchedRule.startsWith("AI:")
-                    Card(
-                        shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = when {
-                                isAi -> AiPurpleBg
-                                decision.shouldDismiss -> BlockRedBg
-                                else -> AllowGreenBg
-                            }
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                // Decision Result Display
+                AnimatedVisibility(
+                    visible = decisionResult != null,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    decisionResult?.let { decision ->
+                        val isAi = decision.matchedRule.startsWith("AI:")
+                        val isBlocked = decision.shouldDismiss
+                        val cardBg = when {
+                            isAi -> ApplePurple.copy(alpha = 0.15f)
+                            isBlocked -> AppleRed.copy(alpha = 0.15f)
+                            else -> AppleGreen.copy(alpha = 0.15f)
+                        }
+                        val borderColor = when {
+                            isAi -> ApplePurple.copy(alpha = 0.4f)
+                            isBlocked -> AppleRed.copy(alpha = 0.4f)
+                            else -> AppleGreen.copy(alpha = 0.4f)
+                        }
+                        val accentColor = when {
+                            isAi -> ApplePurple
+                            isBlocked -> AppleRed
+                            else -> AppleGreen
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(cardBg)
+                                .border(0.5.dp, borderColor, RoundedCornerShape(14.dp))
+                                .padding(12.dp)
                         ) {
-                            Icon(
-                                imageVector = when {
-                                    isAi -> Icons.Default.AutoAwesome
-                                    decision.shouldDismiss -> Icons.Default.Block
-                                    else -> Icons.Default.CheckCircle
-                                },
-                                contentDescription = null,
-                                tint = when {
-                                    isAi -> AiPurple
-                                    decision.shouldDismiss -> BlockRed
-                                    else -> AllowGreen
-                                },
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = if (decision.shouldDismiss) "DECISION: DISMISS (SPAM)" else "DECISION: KEEP (IMPORTANT)",
-                                    fontWeight = FontWeight.Bold,
-                                    color = when {
-                                        isAi -> AiPurple
-                                        decision.shouldDismiss -> BlockRed
-                                        else -> AllowGreen
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = when {
+                                        isAi -> Icons.Default.AutoAwesome
+                                        isBlocked -> Icons.Default.Block
+                                        else -> Icons.Default.CheckCircle
                                     },
-                                    style = MaterialTheme.typography.titleSmall
+                                    contentDescription = null,
+                                    tint = accentColor,
+                                    modifier = Modifier.size(26.dp)
                                 )
-                                Text(
-                                    text = "Rule: ${decision.matchedRule}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (isBlocked) "DISMISS (SPAM DETECTED)" else "KEEP (ALLOWED / SAFE)",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentColor
+                                    )
+                                    Text(
+                                        text = "Rule: ${decision.matchedRule}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AppleTextPrimary
+                                    )
+                                    if (decision.reason.isNotBlank()) {
+                                        Text(
+                                            text = "Reason: ${decision.reason}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = AppleTextSecondary
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -279,74 +349,149 @@ fun SimulateNotificationDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    scope.launch {
-                        val appRule = repository.getAppRuleSync(packageName)
-                        val appMode = appRule?.getAppRuleMode() ?: AppRuleMode.AUTO
-                        val rules = repository.getRulesForPackageSync(packageName)
-                        val prefs = (context.applicationContext as SieveApplication).preferencesManager
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AppleBlue)
+                    .clickable {
+                        scope.launch {
+                            val prefs = (context.applicationContext as SieveApplication).preferencesManager
 
-                        val payload = NotificationClassifier.NotificationPayload(
-                            packageName = packageName,
-                            title = title,
-                            text = text,
-                            channelId = channelId
-                        )
+                            // 1. Check Protected Communication Packages
+                            if (SieveNotificationListenerService.PROTECTED_COMMUNICATION_PACKAGES.contains(packageName)) {
+                                decisionResult = FilterDecision.allow("Protected App (${packageName.substringAfterLast('.')})")
+                                return@launch
+                            }
 
-                        val decision = NotificationClassifier.classify(
-                            payload = payload,
-                            appRuleMode = appMode,
-                            rules = rules
-                        )
+                            // 2. Check Guaranteed Safe Financial & Transaction Content
+                            if (SmartAiClassifier.isGuaranteedSafe(title, text, null)) {
+                                decisionResult = FilterDecision.allow("Safe Financial/Transaction Content")
+                                return@launch
+                            }
 
-                        var finalDecision = decision
-                        if (decision.isPassThrough && prefs.isAiFilterEnabled.value) {
-                            val aiResult = SmartAiClassifier.classify(payload)
-                            if (aiResult.isSpam) {
-                                val aiRule = "AI: ${aiResult.category} (${aiResult.primaryKeyword})"
-                                finalDecision = FilterDecision.block(
-                                    matchedRule = aiRule,
-                                    reason = aiResult.reason
-                                )
-                                repository.recordAiSuggestion(
+                            val appRule = repository.getAppRuleSync(packageName)
+                            val appMode = appRule?.getAppRuleMode() ?: AppRuleMode.AUTO
+                            val rules = repository.getRulesForPackageSync(packageName)
+
+                            val payload = NotificationClassifier.NotificationPayload(
+                                packageName = packageName,
+                                title = title,
+                                text = text,
+                                channelId = channelId
+                            )
+
+                            val decision = NotificationClassifier.classify(
+                                payload = payload,
+                                appRuleMode = appMode,
+                                rules = rules
+                            )
+
+                            var finalDecision = decision
+                            if (decision.isPassThrough && prefs.isAiFilterEnabled.value) {
+                                val aiResult = SmartAiClassifier.classify(payload)
+                                if (aiResult.isSpam) {
+                                    val aiRule = "AI: ${aiResult.category} (${aiResult.primaryKeyword})"
+                                    finalDecision = FilterDecision.block(
+                                        matchedRule = aiRule,
+                                        reason = aiResult.reason
+                                    )
+                                    repository.recordAiSuggestion(
+                                        packageName = packageName,
+                                        suggestedKeyword = aiResult.primaryKeyword,
+                                        category = aiResult.category,
+                                        sampleTitle = title,
+                                        sampleText = text
+                                    )
+                                }
+                            }
+
+                            decisionResult = finalDecision
+
+                            // If blocked, log to database so user can see it appear in real-time
+                            if (finalDecision.shouldDismiss) {
+                                repository.logBlockedNotification(
                                     packageName = packageName,
-                                    suggestedKeyword = aiResult.primaryKeyword,
-                                    category = aiResult.category,
-                                    sampleTitle = title,
-                                    sampleText = text
+                                    title = title,
+                                    textSnippet = text,
+                                    channelId = channelId,
+                                    matchedRule = finalDecision.matchedRule
                                 )
                             }
                         }
-
-                        decisionResult = finalDecision
-
-                        // If blocked, log to database so user can see it appear in real-time!
-                        if (finalDecision.shouldDismiss) {
-                            repository.logBlockedNotification(
-                                packageName = packageName,
-                                title = title,
-                                textSnippet = text,
-                                channelId = channelId,
-                                matchedRule = finalDecision.matchedRule
-                            )
-                        }
                     }
-                }
+                    .padding(horizontal = 16.dp, vertical = 9.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Run Test")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Run Test",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClick = onDismiss)
+                    .padding(horizontal = 14.dp, vertical = 9.dp)
+            ) {
+                Text(
+                    text = "Close",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = AppleTextSecondary
+                )
             }
         }
     )
+}
+
+@Composable
+private fun CupertinoSimulationInputField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    minLines: Int = 1
+) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = AppleTextTertiary,
+            letterSpacing = 0.5.sp
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(AppleCardSecondary)
+                .border(0.5.dp, AppleHairline, RoundedCornerShape(10.dp))
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                textStyle = TextStyle(
+                    color = AppleTextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal
+                ),
+                cursorBrush = SolidColor(AppleBlue),
+                modifier = Modifier.fillMaxWidth(),
+                minLines = minLines
+            )
+        }
+    }
 }

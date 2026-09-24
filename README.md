@@ -161,14 +161,14 @@ flowchart TD
 ## 🚀 Download & Installation
 
 ### Option 1: Direct APK Download
-1. Download the latest release: [**`Sieve-v1.1.0.apk`**](release/Sieve-v1.1.0.apk) (~2.4 MB).
+1. Download the latest release: [**`Sieve-v1.4.0.apk`**](release/Sieve-v1.4.0.apk) (~2.45 MB, Cupertino Sentinel Edition).
 2. Install the APK on your Android device (Android 8.0+).
 3. Open Sieve and grant **Notification Listener Access** when prompted.
 4. *(Recommended)* Disable battery optimization for Sieve via the in-app OEM guide in Settings.
 
 ### Option 2: Install via ADB
 ```bash
-adb install -r release/Sieve-v1.1.0.apk
+adb install -r release/Sieve-v1.4.0.apk
 adb shell am start -n com.sieve.filter/.MainActivity
 ```
 

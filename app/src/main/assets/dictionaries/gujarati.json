@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "language": "gujarati",
+  "code": "gu",
+  "guaranteed_safe": [
+    "ખાતામાંથી કપાયા",
+    "ડેબિટ થયા",
+    "ખાતામાં જમા થયા",
+    "ક્રેડિટ થયા",
+    "વ્યવહાર સફળ",
+    "વ્યવહાર સફળતાપૂર્વક પૂર્ણ",
+    "રૂપિયા મોકલ્યા",
+    "રૂપિયા મળ્યા",
+    "બેંક ખાતું",
+    "ઓટીપી",
+    "ગુપ્ત પિન",
+    "કોઈની સાથે શેર કરશો નહીં",
+    "કોઈને જણાવશો નહીં",
+    "ડિલિવરી માટે નીકળેલ છે",
+    "ડિલિવરી થઈ ગઈ",
+    "ઓર્ડર કન્ફર્મ થયો",
+    "ઓર્ડર મોકલાઈ ગયો",
+    "ડ્રાઈવર આવી રહ્યા છે",
+    "રાઈડર આવી રહ્યા છે",
+    "રાઈડ પિન",
+    "khatamathi kapaya",
+    "khatama jama thaya",
+    "vyavahar safal",
+    "rupiya mokalya",
+    "rupiya malya",
+    "share karsho nahi",
+    "delivery thai gai",
+    "order confirm thayo",
+    "driver aavi rahya che",
+    "rider aavi rahya che"
+  ],
+  "spam_triggers": [
+    {
+      "trigger": "કેશબેક મેળવો",
+      "keyword": "Cashback Bait (Gujarati)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "કેશબેક",
+      "keyword": "Cashback (Gujarati)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "મોટી છૂટ",
+      "keyword": "Big Discount (Gujarati)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "ડિસ્કાઉન્ટ",
+      "keyword": "Discount (Gujarati)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "મફત સિક્કા",
+      "keyword": "Free Coins (Gujarati)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "મફત",
+      "keyword": "Freebie Bait (Gujarati)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "સ્પિન કરો અને જીતો",
+      "keyword": "Spin & Win (Gujarati)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "તાત્કાલિક લોન",
+      "keyword": "Instant Loan Bait (Gujarati)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ઇન્સ્ટન્ટ લોન",
+      "keyword": "Instant Loan (Gujarati)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "રૂપિયા જીતો",
+      "keyword": "Win Money (Gujarati)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "લકી ડ્રો",
+      "keyword": "Lucky Draw (Gujarati)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "ઇનામ જીતો",
+      "keyword": "Win Prize (Gujarati)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ભૂખ લાગી છે",
+      "keyword": "Hungry Food Nudge (Gujarati)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "ફૂડ ઓફર",
+      "keyword": "Food Offer (Gujarati)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "cashback melvo",
+      "keyword": "Cashback Bait (Gujlish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "tattkalik loan",
+      "keyword": "Instant Loan (Gujlish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "spin karo ane jito",
+      "keyword": "Spin & Win (Gujlish)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "rupiya jito",
+      "keyword": "Win Money (Gujlish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "mafat coins",
+      "keyword": "Free Coins (Gujlish)",
+      "category": "GAMING_BETTING"
+    }
+  ]
+}

@@ -40,16 +40,23 @@ class AppRulesViewModel(application: Application) : AndroidViewModel(application
         repository.getAllAppBlockCounts(),
         _searchQuery
     ) { installed, savedRules, blockCounts, query ->
-        val ruleMap = savedRules.associate { it.packageName to it.getAppRuleMode() }
+        val ruleMap = savedRules.associateBy { it.packageName }
         val countMap = blockCounts.associate { it.packageName to it.count }
 
         val merged = installed.map { app ->
-            val mode = ruleMap[app.packageName] ?: AppRuleMode.AUTO
+            val rule = ruleMap[app.packageName]
+            val mode = rule?.getAppRuleMode() ?: AppRuleMode.AUTO
             val count = countMap[app.packageName] ?: 0
-            app.copy(mode = mode, blockCount = count)
+            app.copy(
+                mode = mode,
+                blockCount = count,
+                quietHoursEnabled = rule?.quietHoursEnabled ?: false,
+                quietHoursStartMinutes = rule?.quietHoursStartMinutes ?: -1,
+                quietHoursEndMinutes = rule?.quietHoursEndMinutes ?: -1
+            )
         }.sortedWith(
-            // Prioritize custom rules (ALLOW or BLOCK) over default AUTO, then by highest block count, then alphabetically
-            compareBy<AppInfo> { it.mode == AppRuleMode.AUTO }
+            // Prioritize custom rules (ALLOW or BLOCK) or active quiet hours over default AUTO, then by highest block count, then alphabetically
+            compareBy<AppInfo> { it.mode == AppRuleMode.AUTO && !it.quietHoursEnabled }
                 .thenByDescending { it.blockCount }
                 .thenBy { it.appName.lowercase() }
         )
@@ -75,6 +82,12 @@ class AppRulesViewModel(application: Application) : AndroidViewModel(application
     fun setAppMode(packageName: String, mode: AppRuleMode) {
         viewModelScope.launch {
             repository.setAppRule(packageName, mode)
+        }
+    }
+
+    fun setAppQuietHours(packageName: String, enabled: Boolean, startMinutes: Int, endMinutes: Int) {
+        viewModelScope.launch {
+            repository.setAppQuietHours(packageName, enabled, startMinutes, endMinutes)
         }
     }
 

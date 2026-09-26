@@ -545,6 +545,250 @@ class SmartAiClassifierTest {
         assertTrue("Instant pre-approved loan bait must be flagged as spam", result.isSpam)
         assertEquals(AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT, result.category)
     }
+
+    // ================= REGIONAL LANGUAGE TESTS (P0) =================
+
+    // 1. TAMIL (Script & Tanglish)
+    @Test
+    fun testTamilBankDebit_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.sbi.upi",
+            title = "SBI வங்கி கணக்கு எச்சரிக்கை",
+            text = "ரூ 500 உங்கள் கணக்கிலிருந்து பற்று வைக்கப்பட்டது. பரிவர்த்தனை வெற்றி. இருப்பு ரூ 12,400."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Tamil bank debit transaction must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testTamilDelivery_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.swiggy.android",
+            title = "Swiggy டெலிவரி",
+            text = "உங்கள் உணவு டெலிவரி செய்யப்பட்டது. உணவை மகிழுங்கள்!"
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Tamil food delivery notification must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testTamilCashbackBait_DetectedAsSpam() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.shopping.tamil",
+            title = "இன்றே ஆர்டர் செய்து கேஷ்பேக் பெறுங்கள்",
+            text = "சுழற்றி வெல்லுங்கள் மற்றும் உடனடி கடன் ரூ 5,00,000 வரை பெறுங்கள்!"
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertTrue("Tamil promotional bait must be blocked as spam", result.isSpam)
+    }
+
+    // 2. TELUGU (Script & Tenglish)
+    @Test
+    fun testTeluguBankCredit_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.hdfc.bank",
+            title = "HDFC బ్యాంక్ అలర్ట్",
+            text = "రూ 2,500 మీ ఖాతాలో జమ చేయబడింది. లావాదేవీ విజయవంతం. బ్యాలెన్స్ రూ 45,000."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Telugu bank credit transaction must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testTeluguDelivery_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.zomato.android",
+            title = "Zomato ఆర్డర్ అప్‌డేట్",
+            text = "మీ ఆర్డర్ డెలివరీ చేయబడింది. డ్రైవర్ చేరుకుంటున్నారు."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Telugu delivery alert must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testTeluguInstantLoanAndSpin_DetectedAsSpam() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.loan.telugu",
+            title = "తక్షణ రుణం రూ 3,00,000 ఇప్పుడే తీసుకోండి",
+            text = "స్పిన్ చేసి గెలవండి మరియు భారీ తగ్గింపు ఆఫర్ పొందండి!"
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertTrue("Telugu instant loan and spin bait must be blocked as spam", result.isSpam)
+    }
+
+    // 3. BENGALI (Script & Banglish)
+    @Test
+    fun testBengaliBankTransaction_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.axis.mobile",
+            title = "Axis ব্যাংক লেনদেন",
+            text = "আপনার অ্যাকাউন্ট থেকে ৫০০ টাকা কাটা হয়েছে. লেনদেন সফল."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Bengali bank transaction must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testBengaliOtpSecurity_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.google.android.apps.authenticator2",
+            title = "লগইন ওটিপি",
+            text = "আপনার ওটিপি হলো 592811. কাউকে জানাবেন না বা শেয়ার করবেন না."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Bengali OTP alert must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testBengaliDiscountAndLoan_DetectedAsSpam() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.bengali.offers",
+            title = "বিশাল ছাড় এবং ক্যাশব্যাক পান আজই",
+            text = "তাত্ক্ষণিক ঋণ পান সহজে ২ মিনিটে! স্পিন করে জিতুন."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertTrue("Bengali commercial promo must be blocked as spam", result.isSpam)
+    }
+
+    // 4. MARATHI (Script & Transliteration)
+    @Test
+    fun testMarathiBankDebit_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.icici.bank",
+            title = "ICICI बँक सूचना",
+            text = "तुमच्या खात्यातून रु. १२०० वजा झाले. व्यवहार यशस्वी."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Marathi bank debit alert must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testMarathiDelivery_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.blinkit.groceries",
+            title = "Blinkit डिलिव्हरी",
+            text = "तुमची ऑर्डर डिलिव्हरी झाली. चालक येत आहे."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Marathi delivery notification must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testMarathiSpinWinAndLoan_DetectedAsSpam() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.marathi.promo",
+            title = "कॅशबॅक मिळवा आणि स्पिन करा आणि जिंका",
+            text = "त्वरित कर्ज मिळवा अवघ्या ५ मिनिटांत! मोफत कॉइन्स मिळवा."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertTrue("Marathi promo bait must be blocked as spam", result.isSpam)
+    }
+
+    // 5. GUJARATI (Script & Gujlish)
+    @Test
+    fun testGujaratiBankCredit_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.bankofbaroda.upi",
+            title = "BOB બેંક એલર્ટ",
+            text = "તમારા ખાતામાં રૂ. ૫૦૦૦ જમા થયા. વ્યવહાર સફળ."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Gujarati bank credit must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testGujaratiOtpSecurity_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.security.auth",
+            title = "સુરક્ષા ઓટીપી",
+            text = "તમારો ઓટીપી 482910 છે. કોઈની સાથે શેર કરશો નહીં."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Gujarati OTP alert must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testGujaratiSpinAndLoan_DetectedAsSpam() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.gujarati.promo",
+            title = "મોટી છૂટ મેળવો અને સ્પિન કરો અને જીતો",
+            text = "તાત્કાલિક લોન મેળવો કોઈ દસ્તાવેજ વગર! રૂપિયા જીતો."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertTrue("Gujarati promo bait must be blocked as spam", result.isSpam)
+    }
+
+    // 6. PUNJABI (Gurmukhi Script & Transliteration)
+    @Test
+    fun testPunjabiBankDebit_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.pnb.bank",
+            title = "PNB ਬੈਂਕ ਅਲਰਟ",
+            text = "ਤੁਹਾਡੇ ਖਾਤੇ ਵਿੱਚੋਂ 1500 ਰੁਪਏ ਕੱਟੇ ਗਏ. ਲੈਣ-ਦੇਣ ਸਫਲ."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Punjabi bank debit alert must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testPunjabiDelivery_GuaranteedSafe() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.delivery.punjab",
+            title = "ਡਿਲੀਵਰੀ ਅਪਡੇਟ",
+            text = "ਤੁਹਾਡੀ ਡਿਲੀਵਰੀ ਹੋ ਗਈ ਹੈ. ਡਰਾਈਵਰ ਪਹੁੰਚ ਰਿਹਾ ਹੈ."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertFalse("Punjabi delivery update must NEVER be blocked", result.isSpam)
+        assertTrue(SmartAiClassifier.isGuaranteedSafe(payload.title, payload.text))
+    }
+
+    @Test
+    fun testPunjabiCashbackAndLoan_DetectedAsSpam() {
+        val payload = NotificationClassifier.NotificationPayload(
+            packageName = "com.punjabi.promo",
+            title = "ਕੈਸ਼ਬੈਕ ਪ੍ਰਾਪਤ ਕਰੋ ਅਤੇ ਪੈਸੇ ਜਿੱਤੋ",
+            text = "ਤੁਰੰਤ ਕਰਜ਼ਾ ਪ੍ਰਾਪਤ ਕਰੋ ਘੱਟ ਵਿਆਜ ਤੇ! ਸਪਿਨ ਕਰੋ ਅਤੇ ਜਿੱਤੋ."
+        )
+        val result = SmartAiClassifier.classify(payload, isCommercialShieldEnabled = true)
+        assertTrue("Punjabi promo bait must be blocked as spam", result.isSpam)
+    }
+
+    @Test
+    fun testPaymentCollectRequest_DetectedCorrectly() {
+        val collectReq1 = SmartAiClassifier.detectPaymentCollectRequest(
+            title = "PhonePe",
+            text = "Ramesh Kumar has requested ₹500 on PhonePe"
+        )
+        org.junit.Assert.assertNotNull("Collect request must be identified", collectReq1)
+        assertEquals("Ramesh Kumar", collectReq1?.sender)
+        assertEquals("₹500", collectReq1?.amount)
+
+        val collectReq2 = SmartAiClassifier.detectPaymentCollectRequest(
+            title = "Google Pay",
+            text = "Collect request from Priya Sharma for Rs. 1,200."
+        )
+        org.junit.Assert.assertNotNull(collectReq2)
+        assertEquals("Priya Sharma", collectReq2?.sender)
+        assertEquals("Rs. 1,200", collectReq2?.amount)
+
+        // Non-collect request should return null
+        val normalAlert = SmartAiClassifier.detectPaymentCollectRequest(
+            title = "HDFC Bank Alert",
+            text = "₹500 debited from a/c **1234 for shopping at Grocery Store"
+        )
+        org.junit.Assert.assertNull("Standard debit alerts should not be flagged as collect requests", normalAlert)
+    }
 }
 
 

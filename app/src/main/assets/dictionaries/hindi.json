@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "language": "hindi",
+  "code": "hi",
+  "guaranteed_safe": [
+    "खाते से काटे गए",
+    "खाते में जमा",
+    "रुपये भेजे गए",
+    "रुपये प्राप्त हुए",
+    "लेन-देन सफल",
+    "भुगतान सफल",
+    "बैंक खाता",
+    "ओटीपी",
+    "गोपनीय कोड",
+    "किसी के साथ साझा न करें",
+    "किसी को न बताएं",
+    "डिलीवरी के लिए निकला",
+    "सफलतापूर्वक डिलीवर",
+    "डिलीवर हो गया",
+    "ऑर्डर कन्फर्म हुआ",
+    "ऑर्डर भेज दिया गया",
+    "ड्राइवर पहुंच रहा है",
+    "राइडर पहुंच रहा है",
+    "राइड पिन",
+    "khate se kate gaye",
+    "khate me jama",
+    "rupaye bheje gaye",
+    "rupaye prapt huye",
+    "bhugtan safal",
+    "kisi ke sath share na kare",
+    "delivery ho gayi",
+    "driver pahunch raha hai"
+  ],
+  "spam_triggers": [
+    {
+      "trigger": "कैशबैक पाएं",
+      "keyword": "Cashback Bait (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "कैशबैक",
+      "keyword": "Cashback (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "भारी छूट",
+      "keyword": "Big Discount (Hindi)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "छूट",
+      "keyword": "Discount (Hindi)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "फ्री कॉइन्स",
+      "keyword": "Free Coins (Hindi)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "मुफ्त",
+      "keyword": "Freebie Bait (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "स्पिन करें और जीतें",
+      "keyword": "Spin & Win (Hindi)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "तुरंत लोन",
+      "keyword": "Instant Loan Bait (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "इंस्टेंट लोन",
+      "keyword": "Instant Loan (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "रुपये जीतें",
+      "keyword": "Win Rupees Bait (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "लकी ड्रा",
+      "keyword": "Lucky Draw (Hindi)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "इनाम जीतें",
+      "keyword": "Win Prize (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "भूख लगी है",
+      "keyword": "Hungry Food Nudge (Hindi)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "खाना ऑर्डर करें",
+      "keyword": "Food Offer (Hindi)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "कमाएं",
+      "keyword": "Earn Bait (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "कमाओ",
+      "keyword": "Earn Bait (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "जीतें",
+      "keyword": "Win Bait (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "जीतो",
+      "keyword": "Win Bait (Hindi)",
+      "category": "FINANCIAL_BAIT"
+    }
+  ]
+}

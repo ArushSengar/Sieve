@@ -7,6 +7,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Calendar
 
+enum class AppThemeMode(val title: String) {
+    SYSTEM("Auto (System)"),
+    LIGHT("Clean Light"),
+    DARK("Deep Midnight"),
+    AMOLED("Pure AMOLED")
+}
+
+enum class AccentTheme(val title: String, val primaryColor: Long, val glowColor: Long) {
+    EMERALD("Emerald", 0xFF10B981, 0x3310B981),
+    CYBER_CYAN("Cyber Cyan", 0xFF06B6D4, 0x3306B6D4),
+    ROYAL_VIOLET("Royal Violet", 0xFF8B5CF6, 0x338B5CF6),
+    SUNSET_AMBER("Sunset Amber", 0xFFF59E0B, 0x33F59E0B),
+    ROSE_CRIMSON("Rose Crimson", 0xFFF43F5E, 0x33F43F5E),
+    TITANIUM("Titanium", 0xFF64748B, 0x3364748B)
+}
+
 /**
  * Thread-safe preferences manager storing global filter toggles, Quiet Hours configuration,
  * Anti-Flooding / Deduplication, Log Retention Policy, and AMOLED Dark Mode preferences.
@@ -78,9 +94,47 @@ class PreferencesManager(context: Context) {
         _logRetentionDays.value = days
     }
 
+    private val _themeMode = MutableStateFlow(
+        try {
+            val stored = prefs.getString(KEY_THEME_MODE, null)
+            if (stored != null) {
+                AppThemeMode.valueOf(stored)
+            } else if (prefs.getBoolean(KEY_AMOLED_BLACK_MODE, true)) {
+                AppThemeMode.AMOLED
+            } else {
+                AppThemeMode.SYSTEM
+            }
+        } catch (_: Exception) {
+            AppThemeMode.AMOLED
+        }
+    )
+    val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
+
+    private val _accentTheme = MutableStateFlow(
+        try {
+            AccentTheme.valueOf(prefs.getString(KEY_ACCENT_THEME, AccentTheme.EMERALD.name) ?: AccentTheme.EMERALD.name)
+        } catch (_: Exception) {
+            AccentTheme.EMERALD
+        }
+    )
+    val accentTheme: StateFlow<AccentTheme> = _accentTheme.asStateFlow()
+
+    fun setThemeMode(mode: AppThemeMode) {
+        prefs.edit().putString(KEY_THEME_MODE, mode.name).apply()
+        _themeMode.value = mode
+        val amoled = mode == AppThemeMode.AMOLED
+        _isAmoledBlackMode.value = amoled
+        prefs.edit().putBoolean(KEY_AMOLED_BLACK_MODE, amoled).apply()
+    }
+
+    fun setAccentTheme(accent: AccentTheme) {
+        prefs.edit().putString(KEY_ACCENT_THEME, accent.name).apply()
+        _accentTheme.value = accent
+    }
+
     fun setAmoledBlackMode(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_AMOLED_BLACK_MODE, enabled).apply()
-        _isAmoledBlackMode.value = enabled
+        val mode = if (enabled) AppThemeMode.AMOLED else AppThemeMode.DARK
+        setThemeMode(mode)
     }
 
     fun setQuietHours(startHour: Int, startMinute: Int, endHour: Int, endMinute: Int) {
@@ -116,6 +170,22 @@ class PreferencesManager(context: Context) {
         }
     }
 
+    private val _isPaymentRequestAdvisoryEnabled = MutableStateFlow(prefs.getBoolean(KEY_PAYMENT_REQUEST_ADVISORY_ENABLED, false))
+    val isPaymentRequestAdvisoryEnabled: StateFlow<Boolean> = _isPaymentRequestAdvisoryEnabled.asStateFlow()
+
+    private val _hasSeenPaymentAdvisoryDisclaimer = MutableStateFlow(prefs.getBoolean(KEY_SEEN_PAYMENT_ADVISORY_DISCLAIMER, false))
+    val hasSeenPaymentAdvisoryDisclaimer: StateFlow<Boolean> = _hasSeenPaymentAdvisoryDisclaimer.asStateFlow()
+
+    fun setPaymentRequestAdvisoryEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_PAYMENT_REQUEST_ADVISORY_ENABLED, enabled).apply()
+        _isPaymentRequestAdvisoryEnabled.value = enabled
+    }
+
+    fun setSeenPaymentAdvisoryDisclaimer(seen: Boolean) {
+        prefs.edit().putBoolean(KEY_SEEN_PAYMENT_ADVISORY_DISCLAIMER, seen).apply()
+        _hasSeenPaymentAdvisoryDisclaimer.value = seen
+    }
+
     /**
      * Returns true if filtering should actively run right now.
      */
@@ -136,5 +206,9 @@ class PreferencesManager(context: Context) {
         private const val KEY_AMOLED_BLACK_MODE = "amoled_black_mode"
         private const val KEY_AI_FILTER_ENABLED = "ai_filter_enabled"
         private const val KEY_COMMERCIAL_SHIELD_ENABLED = "commercial_shield_enabled"
+        private const val KEY_PAYMENT_REQUEST_ADVISORY_ENABLED = "payment_request_advisory_enabled"
+        private const val KEY_SEEN_PAYMENT_ADVISORY_DISCLAIMER = "seen_payment_advisory_disclaimer"
+        private const val KEY_THEME_MODE = "theme_mode"
+        private const val KEY_ACCENT_THEME = "accent_theme"
     }
 }

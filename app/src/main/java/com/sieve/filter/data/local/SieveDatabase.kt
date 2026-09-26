@@ -10,10 +10,12 @@ import com.sieve.filter.data.local.dao.AiSuggestedRuleDao
 import com.sieve.filter.data.local.dao.AppRuleDao
 import com.sieve.filter.data.local.dao.BlockLogDao
 import com.sieve.filter.data.local.dao.KeywordRuleDao
+import com.sieve.filter.data.local.dao.PaymentFlagLogDao
 import com.sieve.filter.data.local.entity.AiSuggestedRuleEntity
 import com.sieve.filter.data.local.entity.AppRuleEntity
 import com.sieve.filter.data.local.entity.BlockLogEntity
 import com.sieve.filter.data.local.entity.KeywordRuleEntity
+import com.sieve.filter.data.local.entity.PaymentFlagLogEntity
 import com.sieve.filter.model.RuleAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,9 +26,10 @@ import kotlinx.coroutines.launch
         AppRuleEntity::class,
         KeywordRuleEntity::class,
         BlockLogEntity::class,
-        AiSuggestedRuleEntity::class
+        AiSuggestedRuleEntity::class,
+        PaymentFlagLogEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class SieveDatabase : RoomDatabase() {
@@ -35,6 +38,7 @@ abstract class SieveDatabase : RoomDatabase() {
     abstract fun keywordRuleDao(): KeywordRuleDao
     abstract fun blockLogDao(): BlockLogDao
     abstract fun aiSuggestedRuleDao(): AiSuggestedRuleDao
+    abstract fun paymentFlagLogDao(): PaymentFlagLogDao
 
     companion object {
         @Volatile
@@ -61,6 +65,34 @@ abstract class SieveDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 1. Extend block_logs with stage_id and matched_pattern_id for "Explain this block"
+                db.execSQL("ALTER TABLE `block_logs` ADD COLUMN `stage_id` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `block_logs` ADD COLUMN `matched_pattern_id` TEXT DEFAULT NULL")
+
+                // 2. Extend app_rules with quiet hours settings
+                db.execSQL("ALTER TABLE `app_rules` ADD COLUMN `quiet_hours_enabled` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `app_rules` ADD COLUMN `quiet_hours_start_minutes` INTEGER NOT NULL DEFAULT -1")
+                db.execSQL("ALTER TABLE `app_rules` ADD COLUMN `quiet_hours_end_minutes` INTEGER NOT NULL DEFAULT -1")
+
+                // 3. Create payment_flag_log for suspicious collect request advisory history
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `payment_flag_log` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `package_name` TEXT NOT NULL,
+                        `sender` TEXT NOT NULL,
+                        `timestamp` INTEGER NOT NULL,
+                        `dismissed_by_user` INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_payment_flag_log_sender` ON `payment_flag_log` (`sender`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_payment_flag_log_package_name` ON `payment_flag_log` (`package_name`)")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): SieveDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -68,7 +100,7 @@ abstract class SieveDatabase : RoomDatabase() {
                     SieveDatabase::class.java,
                     "sieve_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .fallbackToDestructiveMigration()
                     .addCallback(SieveDatabaseCallback(scope))
                     .build()

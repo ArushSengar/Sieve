@@ -29,6 +29,12 @@ data class BlockLogEntity(
     @ColumnInfo(name = "matched_rule")
     val matchedRule: String,
 
+    @ColumnInfo(name = "stage_id", defaultValue = "0")
+    val stageId: Int = 0,
+
+    @ColumnInfo(name = "matched_pattern_id")
+    val matchedPatternId: String? = null,
+
     @ColumnInfo(name = "timestamp")
     val timestamp: Long = System.currentTimeMillis()
 )

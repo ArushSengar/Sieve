@@ -53,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
@@ -82,12 +83,14 @@ import com.sieve.filter.ui.theme.AppleSeparator
 import com.sieve.filter.ui.theme.AppleTextPrimary
 import com.sieve.filter.ui.theme.AppleTextSecondary
 import com.sieve.filter.ui.theme.AppleTextTertiary
+import com.sieve.filter.ui.theme.customTokens
 import com.sieve.filter.ui.viewmodel.BlockLogDisplayItem
 import com.sieve.filter.ui.viewmodel.BlockLogViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun BlockLogScreen(
     viewModel: BlockLogViewModel = viewModel()
@@ -115,11 +118,12 @@ fun BlockLogScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
         // Notification Access Health Banner
         PermissionBanner()
 
@@ -187,6 +191,20 @@ fun BlockLogScreen(
         }
     }
 
+    // P2: Floating Undo Banner with 5s Auto-dismiss
+        val lastBlockedEvent by viewModel.lastBlockedEvent.collectAsState()
+        com.sieve.filter.ui.components.UndoToast(
+            event = lastBlockedEvent,
+            onUndo = {
+                lastBlockedEvent?.let { viewModel.undoLastBlock(it) }
+            },
+            onDismiss = {
+                viewModel.dismissUndoToast()
+            },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+
     // Dialogs
     if (showSimulateDialog) {
         SimulateNotificationDialog(
@@ -207,16 +225,21 @@ fun BlockLogScreen(
         )
     }
 
+    // P0: Explain This Block Bottom Sheet
     if (selectedItemForDetail != null) {
-        CupertinoBlockLogDetailDialog(
+        com.sieve.filter.ui.components.ExplainBlockSheet(
             item = selectedItemForDetail!!,
             onDismiss = { selectedItemForDetail = null },
-            onAlwaysAllow = {
+            onRestoreNotification = {
+                viewModel.restoreNotification(selectedItemForDetail!!)
+                selectedItemForDetail = null
+            },
+            onAlwaysAllowApp = {
                 viewModel.alwaysAllowApp(selectedItemForDetail!!.entity.packageName)
                 selectedItemForDetail = null
             },
-            onVerifyKeyword = { pattern, pkg ->
-                keywordDialogTarget = Pair(pattern, pkg)
+            onAlwaysAllowPattern = { pattern ->
+                viewModel.alwaysAllowPattern(pattern)
                 selectedItemForDetail = null
             },
             onDelete = {
@@ -240,26 +263,39 @@ fun CupertinoSentinelHeroCard(
     onClearClick: (() -> Unit)? = null
 ) {
     val progress = if (totalBlocked == 0) 0.05f else ((totalBlocked.coerceAtMost(50)) / 50f)
+    val accent = MaterialTheme.colorScheme.primary
+    val isDark = MaterialTheme.customTokens.isDark
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(AppleCard)
-            .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(20.dp))
-            .padding(16.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        accent.copy(alpha = if (isDark) 0.12f else 0.06f),
+                        AppleCard
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                color = accent.copy(alpha = if (isDark) 0.25f else 0.15f),
+                shape = RoundedCornerShape(22.dp)
+            )
+            .padding(18.dp)
     ) {
         Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Apple Activity Ring
+                // Apple Activity Ring styled with active accent color
                 CupertinoActivityRing(
                     progress = progress,
-                    ringColor = AppleGreen,
+                    ringColor = accent,
                     strokeWidth = 10.dp,
-                    modifier = Modifier.size(80.dp)
+                    modifier = Modifier.size(82.dp)
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -295,9 +331,9 @@ fun CupertinoSentinelHeroCard(
                         Spacer(modifier = Modifier.width(6.dp))
                         Box(
                             modifier = Modifier
-                                .size(7.dp)
+                                .size(8.dp)
                                 .clip(CircleShape)
-                                .background(AppleGreen)
+                                .background(accent)
                         )
                     }
 
@@ -323,7 +359,7 @@ fun CupertinoSentinelHeroCard(
                         )
                         CupertinoBadge(
                             text = "Rules: $keywordCount",
-                            color = AppleBlue,
+                            color = accent,
                             icon = Icons.Default.Shield
                         )
                     }
@@ -344,15 +380,15 @@ fun CupertinoSentinelHeroCard(
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(10.dp))
-                        .background(AppleBlue.copy(alpha = 0.12f))
+                        .background(accent.copy(alpha = 0.12f))
                         .clickable(onClick = onSimulateClick)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(horizontal = 12.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.Science,
                         contentDescription = null,
-                        tint = AppleBlue,
+                        tint = accent,
                         modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -360,7 +396,7 @@ fun CupertinoSentinelHeroCard(
                         text = "Simulate & Test",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = AppleBlue
+                        color = accent
                     )
                 }
 
@@ -371,7 +407,7 @@ fun CupertinoSentinelHeroCard(
                             .clip(RoundedCornerShape(10.dp))
                             .background(AppleRed.copy(alpha = 0.10f))
                             .clickable(onClick = onClearClick)
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                            .padding(horizontal = 12.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(

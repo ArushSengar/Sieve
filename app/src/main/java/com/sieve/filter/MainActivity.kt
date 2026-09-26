@@ -19,10 +19,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Phase 3: Adversarial Defense & Runtime App Integrity Verification
+        com.sieve.filter.security.AppIntegritySentinel.verifyAppSignature(this)
         requestBatteryOptimizationExemption()
         setContent {
-            val isAmoled by SieveApplication.instance.preferencesManager.isAmoledBlackMode.collectAsState()
-            SieveTheme(isAmoled = isAmoled) {
+            val themeMode by SieveApplication.instance.preferencesManager.themeMode.collectAsState()
+            val accentTheme by SieveApplication.instance.preferencesManager.accentTheme.collectAsState()
+            SieveTheme(themeMode = themeMode, accentTheme = accentTheme) {
                 SieveApp()
             }
         }

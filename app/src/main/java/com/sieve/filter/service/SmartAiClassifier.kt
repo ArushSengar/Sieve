@@ -736,7 +736,7 @@ object SmartAiClassifier {
             )
         }
 
-        val dealRegex = Regex("\\b(?:deals?|discounts?|offers?)\\b.*\\b(?:now|today|live|ends?|hurry|grab|coolest|hottest)\\b", RegexOption.IGNORE_CASE)
+        val dealRegex = Regex("\\b(?:deals?|discounts?|offers?)\\b.{0,80}?\\b(?:now|today|live|ends?|hurry|grab|coolest|hottest)\\b", RegexOption.IGNORE_CASE)
         val dealMatch = dealRegex.find(combinedContent)
         if (dealMatch != null) {
             val matchedVal = dealMatch.value.trim()
@@ -747,6 +747,28 @@ object SmartAiClassifier {
                 confidence = 0.93f,
                 reason = "Flash deal / offer announcement: '$matchedVal'"
             )
+        }
+
+        // Check 12.5: Regional Language Dictionaries (Tamil, Telugu, Bengali, Marathi, Gujarati, Punjabi, Hindi)
+        for (item in com.sieve.filter.service.dictionaries.DictionaryRegistry.allSpamTriggers) {
+            val triggerNorm = normalizeSpamText(item.trigger)
+            if (combinedContent.contains(triggerNorm) || rawCombined.contains(item.trigger, ignoreCase = true)) {
+                val extracted = extractRefinedKeyword(title, text, item.trigger, item.keyword)
+                val cat = when (item.category) {
+                    "FINANCIAL_BAIT" -> AiSuggestedRuleEntity.CAT_FINANCIAL_BAIT
+                    "SHOPPING_PROMO" -> AiSuggestedRuleEntity.CAT_CATALOG_PROMO
+                    "FOOD_MARKETING" -> AiSuggestedRuleEntity.CAT_CATALOG_PROMO
+                    "GAMING_BETTING" -> AiSuggestedRuleEntity.CAT_GAMIFICATION
+                    else -> AiSuggestedRuleEntity.CAT_COMMERCIAL_PROMO
+                }
+                return AiResult(
+                    isSpam = true,
+                    category = cat,
+                    primaryKeyword = extracted,
+                    confidence = 0.94f,
+                    reason = "Regional language promotional pattern detected: '$extracted' (${item.keyword})"
+                )
+            }
         }
 
         // Check 13: Smart E-Commerce Shield
@@ -802,8 +824,71 @@ object SmartAiClassifier {
                 return "Matched safety guard '$safe'"
             }
         }
+        for (safe in com.sieve.filter.service.dictionaries.DictionaryRegistry.allGuaranteedSafePhrases) {
+            val safeNorm = normalizeSpamText(safe)
+            if (normalized.contains(safeNorm) || raw.contains(safe, ignoreCase = true)) {
+                return "Matched regional safety guard '$safe'"
+            }
+        }
         if (UPI_PAYMENT_REGEX.containsMatchIn(raw)) {
             return "Legitimate financial payment transaction detected"
+        }
+        return null
+    }
+
+    data class PaymentCollectRequest(
+        val sender: String,
+        val amount: String? = null,
+        val rawPhrase: String = ""
+    )
+
+    private val COLLECT_REQUEST_PATTERNS = listOf(
+        // "XYZ has requested ₹500" / "XYZ requested Rs 500"
+        Regex("(.+?)\\s+has\\s+requested\\s+(?:money|payment|(?:[₹Rs]\\.?\\s*[\\d,]+))", RegexOption.IGNORE_CASE),
+        Regex("(.+?)\\s+requested\\s+(?:money|payment|(?:[₹Rs]\\.?\\s*[\\d,]+))\\s*(?:from you|on)?", RegexOption.IGNORE_CASE),
+        // "Collect request from XYZ for ₹500" / "Payment request from XYZ"
+        Regex("(?:collect|payment)\\s+request\\s+from\\s+(.+?)(?:\\s+for|\\s*\\.|$)", RegexOption.IGNORE_CASE),
+        // "Money request from XYZ"
+        Regex("money\\s+request\\s+from\\s+(.+?)(?:\\s+for|\\s*\\.|$)", RegexOption.IGNORE_CASE),
+        // "Approve payment request of ₹500 from XYZ"
+        Regex("(?:approve|authorize)\\s+(?:payment|collect)\\s+request.*from\\s+(.+?)(?:\\s+on|\\s*\\.|$)", RegexOption.IGNORE_CASE),
+        // Hindi: XYZ ने ₹500 का अनुरोध किया है / पेमेंट अनुरोध
+        Regex("(.+?)\\s+ने\\s+(?:पेमेंट|पैसे|[₹Rs])\\s+(?:का\\s+अनुरोध|मांगे)", RegexOption.IGNORE_CASE)
+    )
+
+    private val AMOUNT_REGEX = Regex("(?:₹|Rs\\.?|INR)\\s*[\\d,]+(?:\\.\\d{1,2})?", RegexOption.IGNORE_CASE)
+
+    /**
+     * Non-blocking heuristic to identify incoming UPI / payment-app "collect request"
+     * or "payment request" notifications. Used strictly for advisory flags, NEVER auto-dismissed.
+     */
+    fun detectPaymentCollectRequest(title: String?, text: String?): PaymentCollectRequest? {
+        val targets = listOfNotNull(
+            text?.takeIf { it.isNotBlank() },
+            title?.takeIf { it.isNotBlank() }
+        )
+        if (targets.isEmpty()) return null
+
+        for (content in targets) {
+            for (pattern in COLLECT_REQUEST_PATTERNS) {
+                val match = pattern.find(content)
+                if (match != null) {
+                    var sender = match.groupValues.getOrNull(1)?.trim() ?: ""
+                    sender = sender.removePrefix("New ").removePrefix("Alert: ").removePrefix("Important: ").trim()
+                    if (sender.length > 50) sender = sender.take(50)
+                    if (sender.isBlank()) sender = "Unknown Sender"
+
+                    val combined = "$title $text"
+                    val amountMatch = AMOUNT_REGEX.find(combined)
+                    val amount = amountMatch?.value?.trim()
+
+                    return PaymentCollectRequest(
+                        sender = sender,
+                        amount = amount,
+                        rawPhrase = match.value
+                    )
+                }
+            }
         }
         return null
     }
@@ -819,6 +904,13 @@ object SmartAiClassifier {
             if (!subText.isNullOrBlank()) append(subText)
         }.trim()
         if (rawCombined.isEmpty()) return false
+
+        // Anti-evasion guard: Scams attempting to impersonate utilities, law enforcement,
+        // or distributing malicious APKs must NEVER be shielded by accidental safe transaction words.
+        if (com.sieve.filter.service.ai.NeuralNotificationFilter.isCriticalCrimePattern(rawCombined)) {
+            return false
+        }
+
         val normalized = normalizeSpamText(rawCombined)
         return checkGuaranteedSafe(rawCombined, normalized) != null
     }

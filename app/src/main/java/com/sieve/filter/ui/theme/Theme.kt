@@ -2,69 +2,161 @@ package com.sieve.filter.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.sieve.filter.data.local.AccentTheme
+import com.sieve.filter.data.local.AppThemeMode
 
-private val DarkColorScheme = darkColorScheme(
-    primary = AppleGreen,
-    secondary = AppleBlue,
-    tertiary = ApplePurple,
-    background = AppleBackground,
-    surface = AppleCard,
-    surfaceVariant = AppleCardSecondary,
-    onBackground = AppleTextPrimary,
-    onSurface = AppleTextPrimary,
-    onSurfaceVariant = AppleTextSecondary,
-    outline = AppleSeparator,
-    outlineVariant = AppleHairline
+data class CustomThemeTokens(
+    val cardBackground: Color,
+    val cardCell: Color,
+    val cardBorder: Color,
+    val textPrimary: Color,
+    val textSecondary: Color,
+    val textTertiary: Color,
+    val accentGlow: Color,
+    val isDark: Boolean
 )
 
-// AMOLED True Black palette for OLED battery saving (turns off pixels)
-private val AmoledDarkColorScheme = darkColorScheme(
-    primary = AppleGreen,
-    secondary = AppleBlue,
-    tertiary = ApplePurple,
-    background = AppleBackground,
-    surface = AppleCard,
-    surfaceVariant = AppleCardSecondary,
-    onBackground = AppleTextPrimary,
-    onSurface = AppleTextPrimary,
-    onSurfaceVariant = AppleTextSecondary,
-    outline = AppleSeparator,
-    outlineVariant = AppleHairline
-)
+val LocalCustomThemeTokens = staticCompositionLocalOf {
+    CustomThemeTokens(
+        cardBackground = DarkCardBg,
+        cardCell = DarkCardCell,
+        cardBorder = DarkCardBorder,
+        textPrimary = DarkInkPrimary,
+        textSecondary = DarkInkSecondary,
+        textTertiary = DarkInkTertiary,
+        accentGlow = EmeraldGlow,
+        isDark = true
+    )
+}
 
-private val LightColorScheme = lightColorScheme(
-    primary = AppleGreen,
-    secondary = AppleBlue,
-    tertiary = ApplePurple,
-    background = LightBackground,
-    surface = LightSurface,
-    surfaceVariant = LightSurfaceVariant,
-    onBackground = LightOnBackground,
-    onSurface = LightOnSurface,
-    onSurfaceVariant = LightOnSurfaceVariant,
-    outline = Color(0xFFC6C6C8),
-    outlineVariant = Color(0xFFE5E5EA)
-)
+val MaterialTheme.customTokens: CustomThemeTokens
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalCustomThemeTokens.current
+
+fun buildLightColorScheme(accent: AccentTheme): ColorScheme {
+    val primary = Color(accent.primaryColor)
+    return lightColorScheme(
+        primary = primary,
+        secondary = primary,
+        tertiary = Color(accent.glowColor),
+        background = LightBg,
+        surface = LightCardBg,
+        surfaceVariant = LightCardCell,
+        onBackground = LightInkPrimary,
+        onSurface = LightInkPrimary,
+        onSurfaceVariant = LightInkSecondary,
+        outline = LightCardBorder,
+        outlineVariant = Color(0xFFCBD5E1)
+    )
+}
+
+fun buildDarkColorScheme(accent: AccentTheme): ColorScheme {
+    val primary = Color(accent.primaryColor)
+    return darkColorScheme(
+        primary = primary,
+        secondary = primary,
+        tertiary = Color(accent.glowColor),
+        background = DarkBg,
+        surface = DarkCardBg,
+        surfaceVariant = DarkCardCell,
+        onBackground = DarkInkPrimary,
+        onSurface = DarkInkPrimary,
+        onSurfaceVariant = DarkInkSecondary,
+        outline = DarkCardBorder,
+        outlineVariant = Color(0xFF1E293B)
+    )
+}
+
+fun buildAmoledColorScheme(accent: AccentTheme): ColorScheme {
+    val primary = Color(accent.primaryColor)
+    return darkColorScheme(
+        primary = primary,
+        secondary = primary,
+        tertiary = Color(accent.glowColor),
+        background = AmoledBg,
+        surface = AmoledCardBg,
+        surfaceVariant = AmoledCardCell,
+        onBackground = AmoledInkPrimary,
+        onSurface = AmoledInkPrimary,
+        onSurfaceVariant = AmoledInkSecondary,
+        outline = AmoledCardBorder,
+        outlineVariant = Color(0xFF262626)
+    )
+}
 
 @Composable
 fun SieveTheme(
+    themeMode: AppThemeMode = AppThemeMode.DARK,
+    accentTheme: AccentTheme = AccentTheme.EMERALD,
     darkTheme: Boolean = isSystemInDarkTheme(),
-    isAmoled: Boolean = true,
+    isAmoled: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val effectiveMode = when {
+        isAmoled && themeMode == AppThemeMode.SYSTEM -> AppThemeMode.AMOLED
+        else -> themeMode
+    }
+
+    val isDark = when (effectiveMode) {
+        AppThemeMode.LIGHT -> false
+        AppThemeMode.DARK -> true
+        AppThemeMode.AMOLED -> true
+        AppThemeMode.SYSTEM -> darkTheme
+    }
+
     val colorScheme = when {
-        darkTheme && isAmoled -> AmoledDarkColorScheme
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        effectiveMode == AppThemeMode.LIGHT -> buildLightColorScheme(accentTheme)
+        effectiveMode == AppThemeMode.AMOLED -> buildAmoledColorScheme(accentTheme)
+        effectiveMode == AppThemeMode.DARK -> buildDarkColorScheme(accentTheme)
+        isDark -> buildDarkColorScheme(accentTheme)
+        else -> buildLightColorScheme(accentTheme)
+    }
+
+    val customTokens = when {
+        !isDark -> CustomThemeTokens(
+            cardBackground = LightCardBg,
+            cardCell = LightCardCell,
+            cardBorder = LightCardBorder,
+            textPrimary = LightInkPrimary,
+            textSecondary = LightInkSecondary,
+            textTertiary = LightInkTertiary,
+            accentGlow = Color(accentTheme.glowColor),
+            isDark = false
+        )
+        effectiveMode == AppThemeMode.AMOLED -> CustomThemeTokens(
+            cardBackground = AmoledCardBg,
+            cardCell = AmoledCardCell,
+            cardBorder = AmoledCardBorder,
+            textPrimary = AmoledInkPrimary,
+            textSecondary = AmoledInkSecondary,
+            textTertiary = AmoledInkTertiary,
+            accentGlow = Color(accentTheme.glowColor),
+            isDark = true
+        )
+        else -> CustomThemeTokens(
+            cardBackground = DarkCardBg,
+            cardCell = DarkCardCell,
+            cardBorder = DarkCardBorder,
+            textPrimary = DarkInkPrimary,
+            textSecondary = DarkInkSecondary,
+            textTertiary = DarkInkTertiary,
+            accentGlow = Color(accentTheme.glowColor),
+            isDark = true
+        )
     }
 
     val view = LocalView.current
@@ -75,15 +167,17 @@ fun SieveTheme(
                 window.statusBarColor = colorScheme.background.toArgb()
                 window.navigationBarColor = colorScheme.background.toArgb()
                 val insetsController = WindowCompat.getInsetsController(window, view)
-                insetsController.isAppearanceLightStatusBars = !darkTheme
-                insetsController.isAppearanceLightNavigationBars = !darkTheme
+                insetsController.isAppearanceLightStatusBars = !isDark
+                insetsController.isAppearanceLightNavigationBars = !isDark
             }
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalCustomThemeTokens provides customTokens) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

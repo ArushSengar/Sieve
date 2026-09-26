@@ -90,25 +90,28 @@ fun SieveApp() {
     val (statusText, statusBg, statusColor) = remember(isListening, isFilterEnabled, isQuietHours) {
         val hasPerm = SieveNotificationListenerService.isPermissionGranted(context)
         when {
-            !hasPerm -> Triple("Setup", BlockRedBg, BlockRed)
-            !isFilterEnabled -> Triple("Paused", Color(0xFFEEEEEE), Color(0xFF757575))
-            isQuietHours -> Triple("Quiet", AutoBlueBg, AutoBlue)
-            isListening -> Triple("Active", AllowGreenBg, AllowGreen)
-            else -> Triple("Standby", Color(0xFFFFE0B2), Color(0xFFE65100))
+            !hasPerm -> Triple("Setup", Color(0xFFEF4444).copy(alpha = 0.14f), Color(0xFFEF4444))
+            !isFilterEnabled -> Triple("Paused", Color(0xFF94A3B8).copy(alpha = 0.15f), Color(0xFF64748B))
+            isQuietHours -> Triple("Quiet", Color(0xFF8B5CF6).copy(alpha = 0.15f), Color(0xFF8B5CF6))
+            isListening -> Triple("Active", Color(0xFF10B981).copy(alpha = 0.15f), Color(0xFF10B981))
+            else -> Triple("Standby", Color(0xFFF59E0B).copy(alpha = 0.15f), Color(0xFFF59E0B))
         }
     }
 
+    val colors = MaterialTheme.colorScheme
+
     Scaffold(
+        containerColor = colors.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(AppleBackground)
+                    .background(colors.background)
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                // Apple-style date caption
+                // Date caption
                 val dateStr = remember {
                     java.text.SimpleDateFormat("EEEE, MMM d", java.util.Locale.getDefault())
                         .format(java.util.Date())
@@ -117,7 +120,7 @@ fun SieveApp() {
                 Text(
                     text = dateStr,
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppleTextTertiary,
+                    color = colors.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
@@ -131,15 +134,15 @@ fun SieveApp() {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(34.dp)
-                                .clip(RoundedCornerShape(9.dp))
-                                .background(AppleGreenGlow),
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(colors.primary.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Shield,
                                 contentDescription = null,
-                                tint = AppleGreen,
+                                tint = colors.primary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -147,12 +150,12 @@ fun SieveApp() {
                         Text(
                             text = "Sieve",
                             style = MaterialTheme.typography.displayLarge.copy(fontSize = 30.sp),
-                            color = AppleTextPrimary,
+                            color = colors.onBackground,
                             fontWeight = FontWeight.Bold
                         )
                     }
 
-                    // Cupertino Live Shield Status Capsule
+                    // Live Shield Status Capsule
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
@@ -192,12 +195,12 @@ fun SieveApp() {
             }
         },
         bottomBar = {
-            // Apple Frosted Glass Bottom Navigation Bar
+            // Adaptive Frosted Glass Bottom Navigation Bar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(AppleFrostedGlass)
-                    .border(width = 0.5.dp, color = AppleHairline, shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp))
+                    .background(colors.surface.copy(alpha = 0.95f))
+                    .border(width = 0.5.dp, color = colors.outline.copy(alpha = 0.3f), shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp))
             ) {
                 NavigationBar(
                     containerColor = Color.Transparent,
@@ -222,11 +225,11 @@ fun SieveApp() {
                             },
                             selected = isSelected,
                             colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                                selectedIconColor = AppleGreen,
-                                selectedTextColor = AppleGreen,
-                                unselectedIconColor = AppleTextSecondary,
-                                unselectedTextColor = AppleTextSecondary,
-                                indicatorColor = AppleGreenGlow
+                                selectedIconColor = colors.primary,
+                                selectedTextColor = colors.primary,
+                                unselectedIconColor = colors.onSurfaceVariant,
+                                unselectedTextColor = colors.onSurfaceVariant,
+                                indicatorColor = colors.primary.copy(alpha = 0.16f)
                             ),
                             onClick = {
                                 if (currentRoute != screen.route) {
@@ -248,7 +251,7 @@ fun SieveApp() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(AppleBackground)
+                .background(colors.background)
                 .padding(paddingValues)
         ) {
             NavHost(

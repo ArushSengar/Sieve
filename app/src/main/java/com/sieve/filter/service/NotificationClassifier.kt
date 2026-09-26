@@ -196,21 +196,27 @@ object NotificationClassifier {
         }
 
         // 3a. ALLOW keywords ALWAYS beat BLOCK keywords (e.g. "Order delivered! 20% off your next purchase")
-        pkgAllow?.forEach { rule ->
-            if (matchesPattern(normalizedContent, rule.pattern)) {
-                return FilterDecision.allow(
-                    matchedRule = "Allow Keyword (App): ${rule.pattern}",
-                    reason = "Matched package allow rule '${rule.pattern}'"
-                )
+        // CRITICAL DEFENSIVE GUARD: Malicious cyber-crime scams (e.g. digital arrest, extortion)
+        // often disguise themselves with banking keywords ("a/c ending", "otp", "credited").
+        // Global and package allow rules must NEVER allow content that matches verified cyber-crime patterns.
+        val isCrimePattern = com.sieve.filter.service.ai.NeuralNotificationFilter.isCriticalCrimePattern(rawContent)
+        if (!isCrimePattern) {
+            pkgAllow?.forEach { rule ->
+                if (matchesPattern(normalizedContent, rule.pattern)) {
+                    return FilterDecision.allow(
+                        matchedRule = "Allow Keyword (App): ${rule.pattern}",
+                        reason = "Matched package allow rule '${rule.pattern}'"
+                    )
+                }
             }
-        }
 
-        globalAllow?.forEach { rule ->
-            if (matchesPattern(normalizedContent, rule.pattern)) {
-                return FilterDecision.allow(
-                    matchedRule = "Allow Keyword: ${rule.pattern}",
-                    reason = "Matched global allow rule '${rule.pattern}'"
-                )
+            globalAllow?.forEach { rule ->
+                if (matchesPattern(normalizedContent, rule.pattern)) {
+                    return FilterDecision.allow(
+                        matchedRule = "Allow Keyword: ${rule.pattern}",
+                        reason = "Matched global allow rule '${rule.pattern}'"
+                    )
+                }
             }
         }
 

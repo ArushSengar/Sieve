@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "language": "telugu",
+  "code": "te",
+  "guaranteed_safe": [
+    "డెబిట్ చేయబడింది",
+    "క్రెడిట్ చేయబడింది",
+    "ఖాతాలో జమ",
+    "ఖాతా నుండి డెబిట్",
+    "లావాదేవీ విజయవంతం",
+    "లావాదేవీ విజయవంతమైంది",
+    "డబ్బులు పంపబడ్డాయి",
+    "డబ్బులు స్వీకరించబడ్డాయి",
+    "బ్యాంక్ ఖాతా",
+    "ఓటీపీ",
+    "రహస్య కోడ్",
+    "ఎవరితోనూ పంచుకోవద్దు",
+    "ఎవరికీ చెప్పవద్దు",
+    "డెలివరీ కోసం బయలుదేరింది",
+    "డెలివరీ చేయబడుతోంది",
+    "డెలివరీ చేయబడింది",
+    "ఆర్డర్ ధృవీకరించబడింది",
+    "ఆర్డర్ పంపబడింది",
+    "డ్రైవర్ చేరుకుంటున్నారు",
+    "రైడర్ వస్తున్నారు",
+    "రైడ్ పిన్",
+    "debit cheyabadindi",
+    "credit cheyabadindi",
+    "khathalo jama",
+    "lavadevee vijayavantham",
+    "dabulu pampabaddayi",
+    "dabulu sveekarinchi",
+    "evarithonu panchukovaddu",
+    "evariki cheppavaddu",
+    "delivery cheyabadindi",
+    "order dhrveekarinchabadindi",
+    "driver cherukuntunnaru",
+    "rider vastunnaru"
+  ],
+  "spam_triggers": [
+    {
+      "trigger": "క్యాష్‌బ్యాక్ పొందండి",
+      "keyword": "Cashback Bait (Telugu)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "క్యాష్‌బ్యాక్",
+      "keyword": "Cashback (Telugu)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "భారీ తగ్గింపు",
+      "keyword": "Big Discount (Telugu)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "రాయితీ",
+      "keyword": "Discount (Telugu)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "ఉచిత కాయిన్స్",
+      "keyword": "Free Coins (Telugu)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "ఉచితం",
+      "keyword": "Freebie Bait (Telugu)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "స్పిన్ చేసి గెలవండి",
+      "keyword": "Spin & Win (Telugu)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "తక్షణ రుణం",
+      "keyword": "Instant Loan Bait (Telugu)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ఇన్‌స్టంట్ లోన్",
+      "keyword": "Instant Loan (Telugu)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "డబ్బులు గెలవండి",
+      "keyword": "Win Money (Telugu)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "లక్కీ డ్రా",
+      "keyword": "Lucky Draw (Telugu)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "బహుమతి గెలవండి",
+      "keyword": "Win Prize (Telugu)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ఆకలిగా ఉందా",
+      "keyword": "Hungry Food Nudge (Telugu)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "ఫుడ్ ఆఫర్",
+      "keyword": "Food Offer (Telugu)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "cashback pondandi",
+      "keyword": "Cashback Bait (Tenglish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "thakshana runam",
+      "keyword": "Instant Loan (Tenglish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "spin chesi gelavandi",
+      "keyword": "Spin & Win (Tenglish)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "dabulu gelavandi",
+      "keyword": "Win Money (Tenglish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "uchitha coins",
+      "keyword": "Free Coins (Tenglish)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "bhari taggimpu",
+      "keyword": "Big Discount (Tenglish)",
+      "category": "SHOPPING_PROMO"
+    }
+  ]
+}

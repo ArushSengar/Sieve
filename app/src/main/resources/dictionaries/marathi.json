@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "language": "marathi",
+  "code": "mr",
+  "guaranteed_safe": [
+    "खात्यातून वजा झाले",
+    "पैसे वजा झाले",
+    "खात्यात जमा झाले",
+    "पैसे जमा झाले",
+    "व्यवहार यशस्वी",
+    "व्यवहार यशस्वीरीत्या पूर्ण",
+    "पैसे पाठवले",
+    "पैसे प्राप्त झाले",
+    "बँक खाते",
+    "ओटीपी",
+    "गोपनीय पिन",
+    "कोणाशीही शेअर करू नका",
+    "कोणालाही सांगू नका",
+    "वितरणासाठी बाहेर पडले",
+    "डिलिव्हरीसाठी निघाले",
+    "डिलिव्हरी झाली",
+    "ऑर्डर निश्चित झाली",
+    "ऑर्डर पाठवली",
+    "चालक येत आहे",
+    "रायडर पोहोचत आहे",
+    "राइड पिन",
+    "khatyatun vaja zale",
+    "paise vaja zale",
+    "khatyat jama zale",
+    "paise jama zale",
+    "vyavahar yashasvi",
+    "paise pathavle",
+    "paise prapt zale",
+    "konashihi share karu naka",
+    "delivery jhali",
+    "order nishchit jhali",
+    "chalak yet ahe",
+    "rider yet ahe"
+  ],
+  "spam_triggers": [
+    {
+      "trigger": "कॅशबॅक मिळवा",
+      "keyword": "Cashback Bait (Marathi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "कॅशबॅक",
+      "keyword": "Cashback (Marathi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "मोठी सूट",
+      "keyword": "Big Discount (Marathi)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "डिस्काउंट",
+      "keyword": "Discount (Marathi)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "मोफत कॉइन्स",
+      "keyword": "Free Coins (Marathi)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "मोफत",
+      "keyword": "Freebie Bait (Marathi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "स्पिन करा आणि जिंका",
+      "keyword": "Spin & Win (Marathi)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "त्वरित कर्ज",
+      "keyword": "Instant Loan Bait (Marathi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "इन्स्टंट लोन",
+      "keyword": "Instant Loan (Marathi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "पैसे जिंका",
+      "keyword": "Win Money (Marathi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "लकी ड्रॉ",
+      "keyword": "Lucky Draw (Marathi)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "बक्षीस जिंका",
+      "keyword": "Win Prize (Marathi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "भूक लागली आहे का",
+      "keyword": "Hungry Food Nudge (Marathi)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "जेवणाची ऑफर",
+      "keyword": "Food Offer (Marathi)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "cashback milva",
+      "keyword": "Cashback Bait (Marathi Translit)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "twarit karja",
+      "keyword": "Instant Loan (Marathi Translit)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "spin kara ani jinka",
+      "keyword": "Spin & Win (Marathi Translit)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "paise jinka",
+      "keyword": "Win Money (Marathi Translit)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "mofat coins",
+      "keyword": "Free Coins (Marathi Translit)",
+      "category": "GAMING_BETTING"
+    }
+  ]
+}

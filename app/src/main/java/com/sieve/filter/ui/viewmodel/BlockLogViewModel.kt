@@ -81,6 +81,54 @@ class BlockLogViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    val lastBlockedEvent: StateFlow<com.sieve.filter.service.BlockedNotificationEvent?> =
+        com.sieve.filter.service.SieveNotificationListenerService.lastBlockedEvent
+
+    fun restoreNotification(item: BlockLogDisplayItem) {
+        com.sieve.filter.service.SieveNotificationListenerService.restoreNotification(
+            context = getApplication(),
+            log = item.entity,
+            appName = item.appName
+        )
+    }
+
+    fun alwaysAllowPattern(pattern: String, packageName: String? = null) {
+        viewModelScope.launch {
+            repository.addKeywordRule(
+                pattern = pattern,
+                action = com.sieve.filter.model.RuleAction.ALLOW,
+                packageName = packageName
+            )
+        }
+    }
+
+    fun dismissUndoToast() {
+        com.sieve.filter.service.SieveNotificationListenerService.clearLastBlockedEvent()
+    }
+
+    fun undoLastBlock(event: com.sieve.filter.service.BlockedNotificationEvent) {
+        viewModelScope.launch {
+            // Delete block log entry
+            repository.deleteBlockLog(event.logId)
+            // Best-effort restore back to shade
+            val dummyLog = BlockLogEntity(
+                id = event.logId,
+                packageName = event.packageName,
+                title = event.title,
+                textSnippet = event.text,
+                channelId = null,
+                matchedRule = "Restored",
+                timestamp = event.timestamp
+            )
+            com.sieve.filter.service.SieveNotificationListenerService.restoreNotification(
+                context = getApplication(),
+                log = dummyLog,
+                appName = event.appName
+            )
+            dismissUndoToast()
+        }
+    }
+
     fun addKeywordBlockRule(pattern: String, packageName: String? = null) {
         viewModelScope.launch {
             repository.addKeywordRule(pattern, com.sieve.filter.model.RuleAction.BLOCK, packageName)

@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "language": "punjabi",
+  "code": "pa",
+  "guaranteed_safe": [
+    "ਖਾਤੇ ਵਿੱਚੋਂ ਕੱਟੇ ਗਏ",
+    "ਡੈਬਿਟ ਹੋਏ",
+    "ਖਾਤੇ ਵਿੱਚ ਜਮ੍ਹਾਂ ਹੋਏ",
+    "ਕ੍ਰੈਡਿਟ ਹੋਏ",
+    "ਲੈਣ-ਦੇਣ ਸਫਲ",
+    "ਲੈਣ-ਦੇਣ ਸਫਲਤਾਪੂਰਵਕ",
+    "ਪੈਸੇ ਭੇਜੇ ਗਏ",
+    "ਪੈਸੇ ਪ੍ਰਾਪਤ ਹੋਏ",
+    "ਬੈਂਕ ਖਾਤਾ",
+    "ਓਟੀਪੀ",
+    "ਗੁਪਤ ਕੋਡ",
+    "ਕਿਸੇ ਨਾਲ ਸਾਂਝਾ ਨਾ ਕਰੋ",
+    "ਕਿਸੇ ਨੂੰ ਨਾ ਦੱਸੋ",
+    "ਡਿਲੀਵਰੀ ਲਈ ਨਿਕਲਿਆ",
+    "ਡਿਲੀਵਰੀ ਹੋ ਗਈ",
+    "ਆਰਡਰ ਕਨਫਰਮ ਹੋ ਗਿਆ",
+    "ਆਰਡਰ ਭੇਜਿਆ ਗਿਆ",
+    "ਡਰਾਈਵਰ ਪਹੁੰਚ ਰਿਹਾ ਹੈ",
+    "ਰਾਈਡਰ ਪਹੁੰਚ ਰਿਹਾ ਹੈ",
+    "ਰਾਈਡ ਪਿੰਨ",
+    "khate vichon katte gaye",
+    "khate vich jamman hoye",
+    "lain-dain safal",
+    "paise bheje gaye",
+    "paise prapat hoye",
+    "sanjha na karo",
+    "delivery ho gayi",
+    "order confirm ho gaya",
+    "driver pahunch reha hai",
+    "rider pahunch reha hai"
+  ],
+  "spam_triggers": [
+    {
+      "trigger": "ਕੈਸ਼ਬੈਕ ਪ੍ਰਾਪਤ ਕਰੋ",
+      "keyword": "Cashback Bait (Punjabi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ਕੈਸ਼ਬੈਕ",
+      "keyword": "Cashback (Punjabi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ਵੱਡੀ ਛੋਟ",
+      "keyword": "Big Discount (Punjabi)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "ਡਿਸਕਾਊਂਟ",
+      "keyword": "Discount (Punjabi)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "ਮੁਫ਼ਤ ਸਿੱਕੇ",
+      "keyword": "Free Coins (Punjabi)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "ਮੁਫ਼ਤ",
+      "keyword": "Freebie Bait (Punjabi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ਸਪਿਨ ਕਰੋ ਅਤੇ ਜਿੱਤੋ",
+      "keyword": "Spin & Win (Punjabi)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "ਤੁਰੰਤ ਕਰਜ਼ਾ",
+      "keyword": "Instant Loan Bait (Punjabi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ਇੰਸਟੈਂਟ ਲੋਨ",
+      "keyword": "Instant Loan (Punjabi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ਪੈਸੇ ਜਿੱਤੋ",
+      "keyword": "Win Money (Punjabi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ਲੱਕੀ ਡਰਾਅ",
+      "keyword": "Lucky Draw (Punjabi)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "ਇਨਾਮ ਜਿੱਤੋ",
+      "keyword": "Win Prize (Punjabi)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ਭੁੱਖ ਲੱਗੀ ਹੈ",
+      "keyword": "Hungry Food Nudge (Punjabi)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "ਫੂਡ ਆਫਰ",
+      "keyword": "Food Offer (Punjabi)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "cashback pao",
+      "keyword": "Cashback Bait (Punjabi Translit)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "turant karza",
+      "keyword": "Instant Loan (Punjabi Translit)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "spin karo ate jitto",
+      "keyword": "Spin & Win (Punjabi Translit)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "paise jitto",
+      "keyword": "Win Money (Punjabi Translit)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "muft coins",
+      "keyword": "Free Coins (Punjabi Translit)",
+      "category": "GAMING_BETTING"
+    }
+  ]
+}

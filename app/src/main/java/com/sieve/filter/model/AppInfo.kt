@@ -10,5 +10,8 @@ data class AppInfo(
     val appName: String,
     val icon: Drawable? = null,
     val mode: AppRuleMode = AppRuleMode.AUTO,
-    val blockCount: Int = 0
+    val blockCount: Int = 0,
+    val quietHoursEnabled: Boolean = false,
+    val quietHoursStartMinutes: Int = -1,
+    val quietHoursEndMinutes: Int = -1
 )

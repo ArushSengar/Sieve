@@ -27,6 +27,7 @@ class SieveApplication : Application() {
             keywordRuleDao = database.keywordRuleDao(),
             blockLogDao = database.blockLogDao(),
             aiSuggestedRuleDao = database.aiSuggestedRuleDao(),
+            paymentFlagLogDao = database.paymentFlagLogDao(),
             scope = applicationScope
         )
     }

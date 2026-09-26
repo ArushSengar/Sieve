@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "language": "tamil",
+  "code": "ta",
+  "guaranteed_safe": [
+    "பற்று வைக்கப்பட்டது",
+    "வரவு வைக்கப்பட்டது",
+    "கணக்கில் வரவு",
+    "கணக்கிலிருந்து பற்று",
+    "பரிவர்த்தனை வெற்றி",
+    "பரிவர்த்தனை வெற்றிகரமானது",
+    "பணம் அனுப்பப்பட்டது",
+    "பணம் பெறப்பட்டது",
+    "வங்கி கணக்கு",
+    "கடவுச்சொல்",
+    "ஓடிபி",
+    "பகிர்ந்து கொள்ள வேண்டாம்",
+    "யாரிடமும் பகிர வேண்டாம்",
+    "டெலிவரிக்கு வந்துள்ளது",
+    "டெலிவரி செய்யப்படுகிறது",
+    "டெலிவரி செய்யப்பட்டது",
+    "ஆர்டர் உறுதி செய்யப்பட்டது",
+    "ஆர்டர் அனுப்பப்பட்டது",
+    "ஓட்டுநர் வருகிறார்",
+    "ரைடர் வருகிறார்",
+    "சவாரி குறியீடு",
+    "patru vaikkappattathu",
+    "varavu vaikkappattathu",
+    "kanakkil varavu",
+    "parivarthanai vetri",
+    "panam anuppappattathu",
+    "panam perappattathu",
+    "vangi kanakku",
+    "pagirnthu kolla vendam",
+    "yaridamum pagira vendam",
+    "delivery seiyyappattathu",
+    "deliverykku vanthullathu",
+    "order uruthi seiyyappattathu",
+    "ottunar varugirar",
+    "rider varugirar"
+  ],
+  "spam_triggers": [
+    {
+      "trigger": "பணத்தைத் திரும்பப் பெறுங்கள்",
+      "keyword": "Cashback Bait (Tamil)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "கேஷ்பேக்",
+      "keyword": "Cashback (Tamil)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "தள்ளுபடி",
+      "keyword": "Discount Promo (Tamil)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "மெகா தள்ளுபடி",
+      "keyword": "Mega Sale (Tamil)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "இலவச நாணயங்கள்",
+      "keyword": "Free Coins (Tamil)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "இலவசம்",
+      "keyword": "Freebie Bait (Tamil)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "சுழற்றி வெல்லுங்கள்",
+      "keyword": "Spin & Win (Tamil)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "உடனடி கடன்",
+      "keyword": "Instant Loan Bait (Tamil)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ரூபாய் வெல்லுங்கள்",
+      "keyword": "Win Cash Bait (Tamil)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "லக்கி டிரா",
+      "keyword": "Lucky Draw (Tamil)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "பரிசு வெல்லுங்கள்",
+      "keyword": "Win Prize (Tamil)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ரூபாய் சம்பாதிக்க",
+      "keyword": "Earn Money (Tamil)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "பசிக்குதா",
+      "keyword": "Hungry Food Nudge (Tamil)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "உணவு சலுகை",
+      "keyword": "Food Offer (Tamil)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "cashback perungal",
+      "keyword": "Cashback Bait (Tanglish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "thallupadi",
+      "keyword": "Discount Promo (Tanglish)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "mega thallupadi",
+      "keyword": "Mega Discount (Tanglish)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "udanadi kadan",
+      "keyword": "Instant Loan (Tanglish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "spin seithu vellungal",
+      "keyword": "Spin & Win (Tanglish)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "panam vellungal",
+      "keyword": "Win Money (Tanglish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ilavasa coins",
+      "keyword": "Free Coins (Tanglish)",
+      "category": "GAMING_BETTING"
+    }
+  ]
+}

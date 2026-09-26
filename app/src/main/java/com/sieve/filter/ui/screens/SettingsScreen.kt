@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BatterySaver
 import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DarkMode
@@ -92,6 +93,9 @@ import com.sieve.filter.ui.theme.AppleSeparator
 import com.sieve.filter.ui.theme.AppleTextPrimary
 import com.sieve.filter.ui.theme.AppleTextSecondary
 import com.sieve.filter.ui.theme.AppleTextTertiary
+import com.sieve.filter.ui.theme.customTokens
+import com.sieve.filter.data.local.AccentTheme
+import com.sieve.filter.data.local.AppThemeMode
 import com.sieve.filter.ui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
@@ -112,10 +116,14 @@ fun SettingsScreen(
     val isDeduplicationEnabled by viewModel.isDeduplicationEnabled.collectAsState()
     val logRetentionDays by viewModel.logRetentionDays.collectAsState()
     val isAmoledBlackMode by viewModel.isAmoledBlackMode.collectAsState()
+    val currentThemeMode by viewModel.themeMode.collectAsState()
+    val currentAccentTheme by viewModel.accentTheme.collectAsState()
     val startHour by viewModel.quietHoursStartHour.collectAsState()
     val startMinute by viewModel.quietHoursStartMinute.collectAsState()
     val endHour by viewModel.quietHoursEndHour.collectAsState()
     val endMinute by viewModel.quietHoursEndMinute.collectAsState()
+    val isPaymentRequestAdvisoryEnabled by viewModel.isPaymentRequestAdvisoryEnabled.collectAsState()
+    val hasSeenPaymentAdvisoryDisclaimer by viewModel.hasSeenPaymentAdvisoryDisclaimer.collectAsState()
 
     val isListening by viewModel.isServiceListening.collectAsState()
     val isPermissionGranted by viewModel.isPermissionGranted.collectAsState()
@@ -123,6 +131,7 @@ fun SettingsScreen(
     val actionMessage by viewModel.actionMessage.collectAsState()
     val oem = viewModel.oemGuidance
 
+    var showPaymentDisclaimerDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
     var showClearLogsDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
@@ -160,6 +169,112 @@ fun SettingsScreen(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 0. Group: APPEARANCE & THEMES
+        item {
+            CupertinoInsetGroup(
+                title = "Appearance & Interface",
+                footer = "Select your preferred display theme and color palette. Sieve smoothly adapts all screens, status bars, and navigation cards in real-time."
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                ) {
+                    Text(
+                        text = "THEME MODE",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.customTokens.textTertiary,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val themeModes = AppThemeMode.values()
+                    val selectedThemeIndex = themeModes.indexOf(currentThemeMode).coerceAtLeast(0)
+
+                    CupertinoSegmentedControl(
+                        items = listOf("Auto", "Light", "Dark", "AMOLED"),
+                        selectedIndex = selectedThemeIndex,
+                        onItemSelected = { index ->
+                            viewModel.setThemeMode(themeModes[index])
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(
+                        text = "ACCENT COLOR",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.customTokens.textTertiary,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Row of interactive accent color swatches
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AccentTheme.values().forEach { accent ->
+                            val isSelected = currentAccentTheme == accent
+                            val accentColor = Color(accent.primaryColor)
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { viewModel.setAccentTheme(accent) }
+                                    .padding(horizontal = 2.dp, vertical = 4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .then(
+                                            if (isSelected) {
+                                                Modifier
+                                                    .border(
+                                                        width = 2.5.dp,
+                                                        color = accentColor,
+                                                        shape = CircleShape
+                                                    )
+                                                    .padding(3.dp)
+                                            } else {
+                                                Modifier.padding(2.dp)
+                                            }
+                                        )
+                                        .clip(CircleShape)
+                                        .background(accentColor),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = accent.title.substringBefore(" "),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) MaterialTheme.customTokens.textPrimary else MaterialTheme.customTokens.textTertiary,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // 1. Group: CORE PROTECTION
         item {
             CupertinoInsetGroup(
@@ -212,6 +327,35 @@ fun SettingsScreen(
                             onCheckedChange = viewModel::setCommercialShieldEnabled,
                             activeColor = AppleBlue
                         )
+                    }
+                )
+
+                // Suspicious Payment Requests (Heuristic Advisory)
+                CupertinoGroupedRow(
+                    title = "Payment Request Advisory",
+                    subtitle = if (isPaymentRequestAdvisoryEnabled) "Flags unusual UPI collect requests from unknown senders (never blocks)" else "Disabled — pattern flag advisory for collect requests",
+                    icon = Icons.Default.Warning,
+                    iconBg = AppleOrange,
+                    trailing = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CupertinoBadge(text = "ADVISORY ONLY", color = AppleOrange)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            CupertinoSwitch(
+                                checked = isPaymentRequestAdvisoryEnabled,
+                                onCheckedChange = { enable ->
+                                    if (enable) {
+                                        if (!hasSeenPaymentAdvisoryDisclaimer) {
+                                            showPaymentDisclaimerDialog = true
+                                        } else {
+                                            viewModel.setPaymentRequestAdvisoryEnabled(true)
+                                        }
+                                    } else {
+                                        viewModel.setPaymentRequestAdvisoryEnabled(false)
+                                    }
+                                },
+                                activeColor = AppleOrange
+                            )
+                        }
                     }
                 )
 
@@ -551,7 +695,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Sieve v1.4.0 (Cupertino Sentinel)",
+                                text = "Sieve v2.0.0 (Cupertino Sentinel)",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = AppleTextPrimary
@@ -611,6 +755,65 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+
+    // Dialog: Payment Request Advisory Mandatory Disclaimer
+    if (showPaymentDisclaimerDialog) {
+        AlertDialog(
+            onDismissRequest = { showPaymentDisclaimerDialog = false },
+            containerColor = AppleCardElevated,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text(
+                    text = "Payment Pattern Advisory",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AppleOrange
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Sieve flags unusual-looking payment requests using simple on-device patterns. This is not fraud protection — always verify who you're paying before authorizing anything.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = AppleTextPrimary,
+                        lineHeight = 20.sp
+                    )
+                    Text(
+                        text = "This feature operates purely as an advisory badge. Sieve NEVER auto-dismisses or blocks payment or financial notifications.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppleTextSecondary,
+                        lineHeight = 16.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AppleOrange)
+                        .clickable {
+                            viewModel.setSeenPaymentAdvisoryDisclaimer(true)
+                            viewModel.setPaymentRequestAdvisoryEnabled(true)
+                            showPaymentDisclaimerDialog = false
+                        }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("I Understand & Enable", color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showPaymentDisclaimerDialog = false }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text("Cancel", color = AppleTextSecondary)
+                }
+            }
+        )
     }
 
     // Dialog: Export Rules JSON

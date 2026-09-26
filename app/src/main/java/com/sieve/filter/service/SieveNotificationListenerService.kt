@@ -13,6 +13,9 @@ import android.util.Log
 import android.widget.RemoteViews
 import com.sieve.filter.SieveApplication
 import com.sieve.filter.model.AppRuleMode
+import com.sieve.filter.service.ai.NeuralNotificationFilter
+import com.sieve.filter.service.ghost.GhostInterceptor
+import com.sieve.filter.util.RedactionUtils
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -246,17 +249,88 @@ class SieveNotificationListenerService : NotificationListenerService() {
         val actionTitles = notification.actions?.mapNotNull { it.title?.toString() } ?: emptyList()
         val channelId = notification.channelId
 
-        // 3. Fast Exit if App is set to Always Block
+        // Module B: The Digital Ghost Protocol (Anti-Tracking & Shadow Isolation)
+        GhostInterceptor.processIncomingNotification(sbn, title, text)
+
+        // Android 15 (API 35) Sensitive Notification & OTP Redaction Protection
+        if (isSystemRedactedOrSensitive(sbn)) {
+            Log.d(TAG, "🔒 [ANDROID 15 SENSITIVE] pkg=$packageName | System-flagged sensitive notification — Guaranteed Safe.")
+            return
+        }
+
+        // P1: Non-blocking Suspicious Payment Request Advisory Heuristic
+        // NEVER auto-dismiss financial notifications. Flags unusual collect requests from senders with no prior history.
+        if (prefs.isPaymentRequestAdvisoryEnabled.value) {
+            val collectReq = SmartAiClassifier.detectPaymentCollectRequest(title, text)
+            if (collectReq != null) {
+                val isKnown = repository.isSenderFlaggedOrKnown(collectReq.sender)
+                if (!isKnown) {
+                    repository.recordPaymentFlag(packageName, collectReq.sender)
+                    val appName = try {
+                        packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString()
+                    } catch (_: Exception) {
+                        packageName
+                    }
+                    postPaymentAdvisoryNotification(applicationContext, collectReq.sender, collectReq.amount, appName)
+                    Log.i(TAG, "⚠️ [PAYMENT ADVISORY] pkg=$packageName | sender='${RedactionUtils.maskPii(collectReq.sender)}' | amount='${RedactionUtils.maskPii(collectReq.amount)}'")
+                }
+            }
+        }
+
+        // Stage 4: Guaranteed Safe Financial & Transaction Content
+        // Banking debits/credits, OTPs, transit updates, and deliveries are GUARANTEED safe and NEVER blocked.
+        val isSafeContent = SmartAiClassifier.isGuaranteedSafe(title, text, subText)
+        if (isSafeContent) {
+            Log.d(TAG, "✅ [ALLOWED - GUARANTEED SAFE] pkg=$packageName | title='${RedactionUtils.maskPii(title)}'")
+            return
+        }
+
+        // Stage 5: User Explicit Per-App Rules (Always Block)
         if (appMode == AppRuleMode.BLOCK) {
             dismissNotification(sbn)
-            repository.logBlockedNotification(
+            val logId = repository.logBlockedNotification(
                 packageName = packageName,
                 title = title,
                 textSnippet = text,
                 channelId = channelId,
-                matchedRule = "AppRule: BLOCK"
+                matchedRule = "AppRule: BLOCK",
+                stageId = 5,
+                matchedPatternId = "app_rule:BLOCK"
             )
-            Log.i(TAG, "🛡️ [BLOCKED] pkg=$packageName | Set to Always Block")
+            emitBlockedEvent(logId, packageName, title, text)
+            Log.i(TAG, "🛡️ [BLOCKED - STAGE 5] pkg=$packageName | Set to Always Block")
+            return
+        }
+
+        // Stage 9: Per-App Quiet Hours / Snooze Window
+        val cal = java.util.Calendar.getInstance()
+        val currentMinutes = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+        if (appRuleEntity != null && appRuleEntity.isInsideQuietHours(currentMinutes)) {
+            val end = appRuleEntity.quietHoursEndMinutes
+            val remaining = (end - currentMinutes + 1440) % 1440
+            val durationMs = (if (remaining <= 0) 60 else remaining) * 60 * 1000L
+
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    snoozeNotification(sbn.key, durationMs)
+                } else {
+                    dismissNotification(sbn)
+                }
+            } catch (_: Exception) {
+                dismissNotification(sbn)
+            }
+
+            val logId = repository.logBlockedNotification(
+                packageName = packageName,
+                title = title,
+                textSnippet = text,
+                channelId = channelId,
+                matchedRule = "Quiet Hours: Snoozed until %02d:%02d".format(end / 60, end % 60),
+                stageId = 9,
+                matchedPatternId = "quiet_hours:${appRuleEntity.quietHoursStartMinutes}-${appRuleEntity.quietHoursEndMinutes}"
+            )
+            emitBlockedEvent(logId, packageName, title, text)
+            Log.i(TAG, "🌙 [SNOOZED - STAGE 9] pkg=$packageName | title='$title' until %02d:%02d".format(end / 60, end % 60))
             return
         }
 
@@ -273,10 +347,10 @@ class SieveNotificationListenerService : NotificationListenerService() {
             channelName = ranking.channel?.name?.toString()
         }
 
-        // 4. Fetch keyword rules relevant to this package + global rules
+        // Fetch keyword rules relevant to this package + global rules
         val rules = repository.getRulesForPackageSync(packageName)
 
-        // 5. Classify notification
+        // Classify notification
         val payload = NotificationClassifier.NotificationPayload(
             packageName = packageName,
             title = title,
@@ -296,34 +370,58 @@ class SieveNotificationListenerService : NotificationListenerService() {
         )
 
         if (decision.shouldDismiss) {
-            // Cancel notification immediately (with ongoing dismissal resilience)
+            // Stage 6: Keyword & Regex Rule Matching
             dismissNotification(sbn)
 
-            // Record in Room SQLite BlockLog
-            repository.logBlockedNotification(
+            val logId = repository.logBlockedNotification(
                 packageName = packageName,
                 title = title,
                 textSnippet = text,
                 channelId = channelId,
-                matchedRule = decision.matchedRule
+                matchedRule = decision.matchedRule,
+                stageId = 6,
+                matchedPatternId = decision.matchedRule
             )
+            emitBlockedEvent(logId, packageName, title, text)
 
-            Log.i(TAG, "🛡️ [BLOCKED] pkg=$packageName | title='$title' | matched=${decision.matchedRule}")
+            Log.i(TAG, "🛡️ [BLOCKED - STAGE 6] pkg=$packageName | title='${RedactionUtils.maskPii(title)}' | matched=${decision.matchedRule}")
             return
         } else if (decision.isPassThrough && prefs.isAiFilterEnabled.value) {
-            // 6. On-Device AI Classification for notifications not matched by predefined keywords
+            // Module A: Pre-Crime AI Intent Engine (TensorFlow Lite Architecture)
+            // Evaluates psychological hooks (FOMO/Urgency) and credential theft intents
+            val preCrime = NeuralNotificationFilter.getInstance(applicationContext).evaluateIntent(packageName, title, text)
+            if (preCrime.shouldSilentDrop) {
+                dismissNotification(sbn)
+                val logId = repository.logBlockedNotification(
+                    packageName = packageName,
+                    title = title,
+                    textSnippet = text,
+                    channelId = channelId,
+                    matchedRule = "Pre-Crime: ${preCrime.predictedIntent.label} (${(preCrime.confidenceScore * 100).toInt()}%)",
+                    stageId = 7,
+                    matchedPatternId = "precrime:${preCrime.predictedIntent.name}"
+                )
+                emitBlockedEvent(logId, packageName, title, text)
+                Log.i(TAG, "🧠 [PRE-CRIME SILENT DROP] pkg=$packageName | intent=${preCrime.predictedIntent} | conf=${preCrime.confidenceScore}")
+                return
+            }
+
+            // Stage 7: On-Device AI Classification for notifications not matched by predefined keywords
             val aiResult = SmartAiClassifier.classify(payload, prefs.isCommercialShieldEnabled.value)
             if (aiResult.isSpam) {
                 dismissNotification(sbn)
 
                 val aiRuleTag = "AI: ${aiResult.category} (${aiResult.primaryKeyword})"
-                repository.logBlockedNotification(
+                val logId = repository.logBlockedNotification(
                     packageName = packageName,
                     title = title,
                     textSnippet = text,
                     channelId = channelId,
-                    matchedRule = aiRuleTag
+                    matchedRule = aiRuleTag,
+                    stageId = 7,
+                    matchedPatternId = aiResult.primaryKeyword
                 )
+                emitBlockedEvent(logId, packageName, title, text)
 
                 repository.recordAiSuggestion(
                     packageName = packageName,
@@ -333,21 +431,17 @@ class SieveNotificationListenerService : NotificationListenerService() {
                     sampleText = text
                 )
 
-                Log.i(TAG, "🤖 [AI BLOCKED] pkg=$packageName | keyword='${aiResult.primaryKeyword}' | cat=${aiResult.category} | title='$title'")
+                Log.i(TAG, "🤖 [AI BLOCKED - STAGE 7] pkg=$packageName | keyword='${aiResult.primaryKeyword}' | cat=${aiResult.category} | title='${RedactionUtils.maskPii(title)}'")
                 return
             } else {
-                Log.d(TAG, "✅ [ALLOWED - AI SAFE] pkg=$packageName | title='$title' | reason=${aiResult.reason}")
+                Log.d(TAG, "✅ [ALLOWED - AI SAFE] pkg=$packageName | title='${RedactionUtils.maskPii(title)}' | reason=${aiResult.reason}")
             }
         } else {
-            Log.d(TAG, "✅ [ALLOWED] pkg=$packageName | title='$title' | reason=${decision.reason}")
+            Log.d(TAG, "✅ [ALLOWED] pkg=$packageName | title='${RedactionUtils.maskPii(title)}' | reason=${decision.reason}")
         }
 
-        // 7. Anti-Flooding Deduplication (STRICTLY SCOPED TO MARKETING/PROMO APPS)
-        // Never deduplicate communication apps (WhatsApp, SMS, Truecaller), banking/UPI apps, or message/call categories.
-        // Never deduplicate transactional, security, OTP, or transit notifications.
-        // Never deduplicate during active shade sweeping.
-        val isSafeContent = SmartAiClassifier.isGuaranteedSafe(title, text, subText)
-        if (!isSweep && !isCommunicationApp && !isProtectedCategory && !isSafeContent && prefs.isDeduplicationEnabled.value && !title.isNullOrBlank()) {
+        // Stage 8: Anti-Flooding Deduplication (STRICTLY SCOPED TO MARKETING/PROMO APPS)
+        if (!isSweep && !isCommunicationApp && !isProtectedCategory && prefs.isDeduplicationEnabled.value && !title.isNullOrBlank()) {
             val dedupKey = "$packageName|${title.trim()}|${text?.trim() ?: ""}"
             val now = System.currentTimeMillis()
             val isDuplicate = synchronized(recentNotificationTimestamps) {
@@ -363,20 +457,36 @@ class SieveNotificationListenerService : NotificationListenerService() {
             if (isDuplicate) {
                 dismissNotification(sbn)
                 try {
-                    repository.logBlockedNotification(
+                    val logId = repository.logBlockedNotification(
                         packageName = packageName,
                         title = title,
                         textSnippet = text,
                         channelId = channelId,
-                        matchedRule = "Anti-Flooding: Duplicate (< 10m)"
+                        matchedRule = "Anti-Flooding: Duplicate (< 10m)",
+                        stageId = 8,
+                        matchedPatternId = "dedup:10m"
                     )
+                    emitBlockedEvent(logId, packageName, title, text)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error logging dedup block", e)
                 }
-                Log.i(TAG, "🛡️ [DEDUP BLOCKED] pkg=$packageName | title='$title' (Duplicate within 10m)")
+                Log.i(TAG, "🛡️ [DEDUP BLOCKED - STAGE 8] pkg=$packageName | title='${RedactionUtils.maskPii(title)}' (Duplicate within 10m)")
                 return
             }
         }
+    }
+
+    /**
+     * Android 15 (API 35) Sensitive Notification & OTP Redaction Protection.
+     */
+    private fun isSystemRedactedOrSensitive(sbn: StatusBarNotification): Boolean {
+        if (Build.VERSION.SDK_INT >= 35) {
+            val extras = sbn.notification?.extras
+            if (extras?.getBoolean("android.isSensitiveNotification", false) == true) {
+                return true
+            }
+        }
+        return false
     }
 
     /**
@@ -468,6 +578,22 @@ class SieveNotificationListenerService : NotificationListenerService() {
             // Defensive: fail silently if reflection is restricted
         }
         return extracted
+    }
+
+    private fun emitBlockedEvent(logId: Long, packageName: String, title: String?, text: String?) {
+        val appName = try {
+            packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString()
+        } catch (_: Exception) {
+            packageName.substringAfterLast('.').replaceFirstChar { it.uppercase() }
+        }
+        _lastBlockedEvent.value = BlockedNotificationEvent(
+            logId = logId,
+            packageName = packageName,
+            appName = appName,
+            title = RedactionUtils.maskPii(title),
+            text = RedactionUtils.maskPii(text),
+            timestamp = System.currentTimeMillis()
+        )
     }
 
     companion object {
@@ -567,6 +693,89 @@ class SieveNotificationListenerService : NotificationListenerService() {
         private val _isListening = MutableStateFlow(false)
         val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
 
+        private val _lastBlockedEvent = MutableStateFlow<BlockedNotificationEvent?>(null)
+        val lastBlockedEvent: StateFlow<BlockedNotificationEvent?> = _lastBlockedEvent.asStateFlow()
+
+        fun clearLastBlockedEvent() {
+            _lastBlockedEvent.value = null
+        }
+
+        fun restoreNotification(context: Context, log: com.sieve.filter.data.local.entity.BlockLogEntity, appName: String) {
+            try {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager ?: return
+                val channelId = "restored_notifications"
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channel = android.app.NotificationChannel(
+                        channelId,
+                        "Restored Notifications",
+                        android.app.NotificationManager.IMPORTANCE_HIGH
+                    ).apply {
+                        description = "Notifications restored from Sieve block log"
+                    }
+                    nm.createNotificationChannel(channel)
+                }
+
+                val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
+                    .setSmallIcon(com.sieve.filter.R.drawable.ic_notification_shield)
+                    .setContentTitle(log.title ?: appName)
+                    .setContentText(log.textSnippet ?: "Notification restored by user")
+                    .setSubText(appName)
+                    .setAutoCancel(true)
+                    .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+
+                nm.notify(log.id.toInt(), builder.build())
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to restore notification", e)
+            }
+        }
+
+        fun postPaymentAdvisoryNotification(context: Context, sender: String, amount: String?, appName: String) {
+            try {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager ?: return
+                val channelId = "payment_advisory"
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channel = android.app.NotificationChannel(
+                        channelId,
+                        "Payment Request Advisories",
+                        android.app.NotificationManager.IMPORTANCE_DEFAULT
+                    ).apply {
+                        description = "Advisory notices for unusual payment requests"
+                    }
+                    nm.createNotificationChannel(channel)
+                }
+
+                val title = "Payment Request Advisory: $sender"
+                val body = buildString {
+                    if (!amount.isNullOrBlank()) append("Request for $amount via $appName. ")
+                    append("Sieve flags unusual-looking payment requests using simple on-device patterns. This is not fraud protection — always verify who you're paying before authorizing anything.")
+                }
+
+                val intent = android.content.Intent(context, com.sieve.filter.MainActivity::class.java).apply {
+                    flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                val pendingIntent = android.app.PendingIntent.getActivity(
+                    context,
+                    0,
+                    intent,
+                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                )
+
+                val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
+                    .setSmallIcon(com.sieve.filter.R.drawable.ic_notification_shield)
+                    .setContentTitle(title)
+                    .setContentText(body)
+                    .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(body))
+                    .setSubText("Payment Advisory")
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+
+                nm.notify(System.currentTimeMillis().toInt(), builder.build())
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to post payment advisory notification", e)
+            }
+        }
+
         /**
          * Checks if the Notification Listener permission is granted by the user.
          */
@@ -627,3 +836,16 @@ class SieveNotificationListenerService : NotificationListenerService() {
         }
     }
 }
+
+/**
+ * Event emitted when a notification is dismissed/blocked by Sieve.
+ * Used by [UndoToast] to offer a 5-second undo restoration action.
+ */
+data class BlockedNotificationEvent(
+    val logId: Long,
+    val packageName: String,
+    val appName: String,
+    val title: String?,
+    val text: String?,
+    val timestamp: Long = System.currentTimeMillis()
+)

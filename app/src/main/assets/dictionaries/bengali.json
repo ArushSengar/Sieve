@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "language": "bengali",
+  "code": "bn",
+  "guaranteed_safe": [
+    "ডেবিট হয়েছে",
+    "টাকা কাটা হয়েছে",
+    "ক্রেডিট হয়েছে",
+    "টাকা জমা হয়েছে",
+    "অ্যাকাউন্টে জমা",
+    "অ্যাকাউন্ট থেকে কাটা",
+    "লেনদেন সফল",
+    "টাকা পাঠানো হয়েছে",
+    "টাকা প্রাপ্ত হয়েছে",
+    "ব্যাংক অ্যাকাউন্ট",
+    "ওটিপি",
+    "গোপন পিন",
+    "কাউকে জানাবেন না",
+    "শেয়ার করবেন না",
+    "ডেলিভারির জন্য বের হয়েছে",
+    "ডেলিভারি সম্পন্ন",
+    "ডেলিভারি হয়েছে",
+    "অর্ডার নিশ্চিত হয়েছে",
+    "অর্ডার পাঠানো হয়েছে",
+    "ড্রাইভার আসছেন",
+    "রাইডার আসছেন",
+    "রাইড পিন",
+    "debit hoyeche",
+    "taka kata hoyeche",
+    "credit hoyeche",
+    "taka joma hoyeche",
+    "lenden sofol",
+    "taka pathano hoyeche",
+    "taka prapto hoyeche",
+    "share korben na",
+    "kauke janaben na",
+    "delivery hoyeche",
+    "delivery somponno",
+    "order nishchit hoyeche",
+    "driver aschen",
+    "rider aschen"
+  ],
+  "spam_triggers": [
+    {
+      "trigger": "ক্যাশব্যাক পান",
+      "keyword": "Cashback Bait (Bengali)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ক্যাশব্যাক",
+      "keyword": "Cashback (Bengali)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "বিশাল ছাড়",
+      "keyword": "Big Discount (Bengali)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "ডিসকাউন্ট",
+      "keyword": "Discount (Bengali)",
+      "category": "SHOPPING_PROMO"
+    },
+    {
+      "trigger": "বিনামূল্যে কয়েন",
+      "keyword": "Free Coins (Bengali)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "ফ্রি কয়েন",
+      "keyword": "Free Coins (Bengali)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "স্পিন করে জিতুন",
+      "keyword": "Spin & Win (Bengali)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "তাত্ক্ষণিক ঋণ",
+      "keyword": "Instant Loan Bait (Bengali)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ইনস্ট্যান্ট লোন",
+      "keyword": "Instant Loan (Bengali)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "টাকা জিতুন",
+      "keyword": "Win Money (Bengali)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "লটারি জিতুন",
+      "keyword": "Win Lottery (Bengali)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "বাম্পার প্রাইজ",
+      "keyword": "Bumper Prize (Bengali)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "ক্ষিদে পেয়েছে",
+      "keyword": "Hungry Food Nudge (Bengali)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "খাবারের অফার",
+      "keyword": "Food Offer (Bengali)",
+      "category": "FOOD_MARKETING"
+    },
+    {
+      "trigger": "cashback pan",
+      "keyword": "Cashback Bait (Banglish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "tatkhonik rin",
+      "keyword": "Instant Loan (Banglish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "instant loan pan",
+      "keyword": "Instant Loan (Banglish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "spin kore jitun",
+      "keyword": "Spin & Win (Banglish)",
+      "category": "GAMING_BETTING"
+    },
+    {
+      "trigger": "taka jitun",
+      "keyword": "Win Money (Banglish)",
+      "category": "FINANCIAL_BAIT"
+    },
+    {
+      "trigger": "binamulle coins",
+      "keyword": "Free Coins (Banglish)",
+      "category": "GAMING_BETTING"
+    }
+  ]
+}

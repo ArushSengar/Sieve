@@ -27,6 +27,9 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
+import com.sieve.filter.data.local.dao.PaymentFlagLogDao
+import com.sieve.filter.data.local.entity.PaymentFlagLogEntity
+
 /**
  * Repository providing a unified, clean, and ultra-battery-efficient interface for Room database operations.
  *
@@ -40,6 +43,7 @@ class SieveRepository(
     private val keywordRuleDao: KeywordRuleDao,
     private val blockLogDao: BlockLogDao,
     private val aiSuggestedRuleDao: AiSuggestedRuleDao,
+    private val paymentFlagLogDao: PaymentFlagLogDao? = null,
     scope: CoroutineScope? = null
 ) {
     // In-memory RAM caches for 0-disk-read notification processing
@@ -203,17 +207,72 @@ class SieveRepository(
         title: String?,
         textSnippet: String?,
         channelId: String?,
-        matchedRule: String
+        matchedRule: String,
+        stageId: Int = 0,
+        matchedPatternId: String? = null
     ): Long = withContext(Dispatchers.IO) {
         val log = BlockLogEntity(
             packageName = packageName,
-            title = title,
-            textSnippet = textSnippet,
+            title = com.sieve.filter.util.RedactionUtils.maskPii(title),
+            textSnippet = com.sieve.filter.util.RedactionUtils.maskPii(textSnippet),
             channelId = channelId,
             matchedRule = matchedRule,
+            stageId = stageId,
+            matchedPatternId = matchedPatternId,
             timestamp = System.currentTimeMillis()
         )
         blockLogDao.insertLog(log)
+    }
+
+    // ---------------- QUIET HOURS PER APP ----------------
+
+    suspend fun setAppQuietHours(
+        packageName: String,
+        enabled: Boolean,
+        startMinutes: Int,
+        endMinutes: Int
+    ) = withContext(Dispatchers.IO) {
+        val existing = appRuleDao.getRuleSync(packageName)
+        val updated = if (existing != null) {
+            existing.copy(
+                quietHoursEnabled = enabled,
+                quietHoursStartMinutes = startMinutes,
+                quietHoursEndMinutes = endMinutes
+            )
+        } else {
+            AppRuleEntity(
+                packageName = packageName,
+                mode = AppRuleMode.AUTO.name,
+                quietHoursEnabled = enabled,
+                quietHoursStartMinutes = startMinutes,
+                quietHoursEndMinutes = endMinutes
+            )
+        }
+        appRulesCache[packageName] = updated
+        appRuleDao.upsertRule(updated)
+    }
+
+    // ---------------- SUSPICIOUS PAYMENT REQUEST ADVISORY ----------------
+
+    fun getActivePaymentFlags(): Flow<List<PaymentFlagLogEntity>> {
+        return paymentFlagLogDao?.getActiveFlags() ?: kotlinx.coroutines.flow.flowOf(emptyList())
+    }
+
+    suspend fun recordPaymentFlag(packageName: String, sender: String): Long = withContext(Dispatchers.IO) {
+        val entity = PaymentFlagLogEntity(
+            packageName = packageName,
+            sender = sender,
+            timestamp = System.currentTimeMillis()
+        )
+        paymentFlagLogDao?.insert(entity) ?: -1L
+    }
+
+    suspend fun isSenderFlaggedOrKnown(sender: String): Boolean = withContext(Dispatchers.IO) {
+        (paymentFlagLogDao?.getSenderHistoryCount(sender) ?: 0) > 0
+    }
+
+    suspend fun dismissPaymentFlag(id: Long) = withContext(Dispatchers.IO) {
+        paymentFlagLogDao?.dismissFlag(id)
     }
 
     suspend fun deleteBlockLog(id: Long) = withContext(Dispatchers.IO) {

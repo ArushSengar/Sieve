@@ -38,10 +38,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val isDeduplicationEnabled: StateFlow<Boolean> = prefs.isDeduplicationEnabled
     val logRetentionDays: StateFlow<Int> = prefs.logRetentionDays
     val isAmoledBlackMode: StateFlow<Boolean> = prefs.isAmoledBlackMode
+    val themeMode: StateFlow<com.sieve.filter.data.local.AppThemeMode> = prefs.themeMode
+    val accentTheme: StateFlow<com.sieve.filter.data.local.AccentTheme> = prefs.accentTheme
     val quietHoursStartHour: StateFlow<Int> = prefs.quietHoursStartHour
     val quietHoursStartMinute: StateFlow<Int> = prefs.quietHoursStartMinute
     val quietHoursEndHour: StateFlow<Int> = prefs.quietHoursEndHour
     val quietHoursEndMinute: StateFlow<Int> = prefs.quietHoursEndMinute
+    val isPaymentRequestAdvisoryEnabled: StateFlow<Boolean> = prefs.isPaymentRequestAdvisoryEnabled
+    val hasSeenPaymentAdvisoryDisclaimer: StateFlow<Boolean> = prefs.hasSeenPaymentAdvisoryDisclaimer
+
+    fun setThemeMode(mode: com.sieve.filter.data.local.AppThemeMode) {
+        prefs.setThemeMode(mode)
+    }
+
+    fun setAccentTheme(accent: com.sieve.filter.data.local.AccentTheme) {
+        prefs.setAccentTheme(accent)
+    }
 
     val isServiceListening: StateFlow<Boolean> = SieveNotificationListenerService.isListening
 
@@ -86,6 +98,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setQuietHoursEnabled(enabled: Boolean) {
         prefs.setQuietHoursEnabled(enabled)
+    }
+
+    fun setPaymentRequestAdvisoryEnabled(enabled: Boolean) {
+        prefs.setPaymentRequestAdvisoryEnabled(enabled)
+    }
+
+    fun setSeenPaymentAdvisoryDisclaimer(seen: Boolean) {
+        prefs.setSeenPaymentAdvisoryDisclaimer(seen)
     }
 
     fun setDeduplicationEnabled(enabled: Boolean) {

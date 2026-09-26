@@ -7,13 +7,13 @@ Auto-dismisses promotional spam, financial bait, gamification traps, and catalog
 
 [![Android](https://img.shields.io/badge/Platform-Android%208.0%2B%20%28API%2026%2B%29-3DDC84?logo=android&logoColor=white)](#)
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin%20100%25-7F52FF?logo=kotlin&logoColor=white)](#)
-[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20%26%20M3-4285F4?logo=jetpackcompose&logoColor=white)](#)
+[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20%26%20Cupertino%20Sentinel-4285F4?logo=jetpackcompose&logoColor=white)](#)
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20On--Device%20%280%20Network%20Perms%29-brightgreen)](#)
-[![APK Size](https://img.shields.io/badge/APK%20Size-2.4%20MB-blue)](#)
+[![APK Size](https://img.shields.io/badge/APK%20Size-2.5%20MB-blue)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-31%2F31%20Passing-success)](#)
+[![Tests](https://img.shields.io/badge/Tests-105%2F105%20Passing-success)](#)
 
-[⬇️ **Download Latest APK (v1.1.0)**](https://github.com/ArushSengar/Sieve/releases/latest) • [Features](#-core-features) • [Screenshots](#-screenshots) • [Architecture](#-architecture) • [Battery Optimization](#-battery--performance-optimizations)
+[⬇️ **Download Latest APK (v2.0.0)**](release/Sieve-v2.0.0.apk) • [Cyber-Crime Shield](#-cyber-crime--threat-sentinel) • [Core Features](#-core-features) • [Architecture](#-architecture) • [Security Vault](#-iron-sentinel-security--anti-tamper)
 
 </div>
 
@@ -37,7 +37,25 @@ Auto-dismisses promotional spam, financial bait, gamification traps, and catalog
 
 ## ✨ Core Features
 
-### 🛒 1. Smart E-Commerce Shield (Order Updates Only)
+### 🚨 1. Pre-Crime Cyber-Crime & Threat Sentinel (v2.0)
+Sieve intercepts and **silently drops dangerous cyber-crime scams** before they can ring, vibrate, or trigger social-engineering coercion:
+- **Digital Arrest Extortion:** Impersonation of CBI, Cyber Crime Branch, Police, NCB, or Customs alleging money laundering, illegal parcels, or arrest warrants.
+- **Utility Disconnection Extortion:** Coercive alerts threatening *"electricity power will be disconnected tonight at 9:30 PM due to unpaid bill"*.
+- **Malicious APK Droppers & Fake e-Challan:** Fraudulent Traffic Police e-Challan notices and parcel delivery alerts distributing malware `.apk` downloads.
+- **Predatory Loan Blackmail:** Harassment messages threatening to send morphed photos to family contacts and social circles.
+- **Work-From-Home Task Fraud:** Telegram job lures (*"Earn 5000 daily by liking YouTube videos & completing tasks"*).
+- **Anti-Evasion Protection:** Scams attempting to sneak through using banking keywords (*"A/c ending 1234"*, *"payment of Rs"*) are rigorously intercepted.
+
+### 🌐 2. 7-Language Regional Expansion
+- Embedded high-efficiency on-device dictionaries for **Hindi (Devanagari), Tamil, Telugu, Bengali, Marathi, Gujarati, and Punjabi**.
+- Evaluates native loan, lottery, gaming, and discount hooks with zero cloud network calls.
+
+### 🎨 3. Dynamic Cupertino Sentinel Appearance
+- **True Black OLED Mode:** Pure `#000000` AMOLED canvas for maximum battery savings.
+- **Theme Modes:** Auto / System, Light, Dark, and AMOLED Black.
+- **6 Accent Colors:** Emerald, Sapphire/Cyber, Rose Crimson, Sunset Amber, Royal Violet, and Titanium.
+
+### 🛒 4. Smart E-Commerce Shield (Order Updates Only)
 Shopping and delivery apps frequently flood users with daily deal announcements, flash sales, and cart nudges.
 - **Transactional Delivery Protection:** When enabled, apps like **Flipkart, Amazon, Myntra, Domino's, Swiggy, Zomato, Blinkit, and Zepto** are restricted strictly to real order updates (e.g. *Order Confirmed*, *Out for Delivery*, *Baking*, *Shipped*, *Delivered*, OTPs).
 - **Automated Marketing Drop:** Any non-order marketing broadcasts (*"Grab the coolest deals now!"*, *"Fan of free pizzas?"*) are automatically dismissed without requiring constant keyword maintenance.
@@ -161,14 +179,14 @@ flowchart TD
 ## 🚀 Download & Installation
 
 ### Option 1: Direct APK Download
-1. Download the latest release: [**`Sieve-v1.4.0.apk`**](release/Sieve-v1.4.0.apk) (~2.45 MB, Cupertino Sentinel Edition).
+1. Download the latest release: [**`Sieve-v2.0.0.apk`**](release/Sieve-v2.0.0.apk) (~2.5 MB, Cupertino Sentinel Edition).
 2. Install the APK on your Android device (Android 8.0+).
 3. Open Sieve and grant **Notification Listener Access** when prompted.
 4. *(Recommended)* Disable battery optimization for Sieve via the in-app OEM guide in Settings.
 
 ### Option 2: Install via ADB
 ```bash
-adb install -r release/Sieve-v1.4.0.apk
+adb install -r release/Sieve-v2.0.0.apk
 adb shell am start -n com.sieve.filter/.MainActivity
 ```
 
@@ -187,7 +205,7 @@ adb shell am start -n com.sieve.filter/.MainActivity
 git clone https://github.com/ArushSengar/Sieve.git
 cd Sieve
 
-# Run unit tests (24/24 passing)
+# Run unit tests (105/105 passing)
 ./gradlew testDebugUnitTest
 
 # Build Debug APK
@@ -197,19 +215,21 @@ cd Sieve
 ./gradlew assembleRelease
 ```
 The compiled release APK will be located at:
-`app/build/outputs/apk/release/app-release.apk`
+`app/build/outputs/apk/release/app-release.apk` and copied to `release/Sieve-v2.0.0.apk`.
 
 ---
 
 ## 🧪 Unit Tests
 
-Sieve includes a comprehensive unit testing suite verifying all classification engines and edge cases:
-- ✅ `SmartAiClassifierTest`: Validates detection of gadget giveaways (*super.money* "Win an iPhone 17"), stylized Unicode fonts (*Navi* math bold `𝗰𝗮𝘀𝗵𝗯𝗮𝗰𝗸`), Jar financial traps, Truecaller FOMO hooks, Bewakoof catalog drops, YouTube clickbait, and strict exemption of OTPs, debit/credit alerts, and delivery trackers.
+Sieve includes a comprehensive unit testing suite verifying all classification engines and security edge cases (105/105 tests passing):
+- ✅ `CrimeFilterTest`: Validates 100% pre-crime silent drops for Digital Arrest, utility disconnection extortion, malicious e-Challan APK droppers, predatory loan blackmail, and task scams; validates anti-evasion protections against banking camouflage; validates 0% false positives for legitimate OTPs, banking credits/debits, and deliveries; verifies atomic ReDoS immunity.
+- ✅ `SecurityModulesTest`: Validates Hardware KeyStore AES-256 GCM cryptographic derivation, TEE fallback, ephemeral memory vault purging, AppIntegritySentinel tamper shield runtime heuristics, and PII masking.
+- ✅ `SmartAiClassifierTest`: Validates regional language dictionaries, gadget giveaways, stylized Unicode fonts, FOMO hooks, catalog drops, and strict exemption of OTPs, debit/credit alerts, and delivery trackers.
 - ✅ `NotificationClassifierTest`: Validates Allow-over-Block precedence, package-scoped overrides, fast-path regex caching, whitespace normalization, action button evaluation, and ongoing call protection.
 
 Run the test suite anytime:
 ```bash
-./gradlew test
+./gradlew testDebugUnitTest
 ```
 
 ---

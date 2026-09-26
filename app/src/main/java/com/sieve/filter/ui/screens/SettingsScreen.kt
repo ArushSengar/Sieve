@@ -315,6 +315,28 @@ fun SettingsScreen(
                     }
                 )
 
+                // Cyber-Crime & Extortion Pre-Crime Sentinel
+                CupertinoGroupedRow(
+                    title = "Cyber-Crime Pre-Crime Sentinel",
+                    subtitle = "Silent drops Digital Arrest, utility cut extortion, fake APK lures & predatory loan blackmail",
+                    icon = Icons.Default.Security,
+                    iconBg = AppleRed,
+                    trailing = {
+                        CupertinoBadge(text = "ACTIVE", color = AppleGreen)
+                    }
+                )
+
+                // Regional Language Support
+                CupertinoGroupedRow(
+                    title = "Regional Language Shield",
+                    subtitle = "Embedded dictionaries for Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati & Punjabi",
+                    icon = Icons.Default.AutoAwesome,
+                    iconBg = AppleBlue,
+                    trailing = {
+                        CupertinoBadge(text = "7 LANGUAGES", color = AppleBlue)
+                    }
+                )
+
                 // Commercial & Shopping Shield
                 CupertinoGroupedRow(
                     title = "Smart E-Commerce Shield",

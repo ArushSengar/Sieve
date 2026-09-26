@@ -253,7 +253,11 @@ class NeuralNotificationFilter private constructor(private val context: Context?
      * Evaluates notification and produces a structured [PreCrimeEvaluation].
      * Compatible with SieveNotificationListenerService.
      */
-    fun evaluateIntent(packageName: String, title: String?, text: String?): PreCrimeEvaluation {
+    fun evaluateIntent(
+        @Suppress("UNUSED_PARAMETER") packageName: String,
+        title: String?,
+        text: String?
+    ): PreCrimeEvaluation {
         val startTime = System.nanoTime()
         val score = analyzeIntent(title ?: "", text ?: "")
         val latencyMs = (System.nanoTime() - startTime) / 1_000_000
